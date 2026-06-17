@@ -830,12 +830,12 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ### Phase 2 — Collaboration (Weeks 11–18)
 
-- [ ] Issues (create, comment, label, close, search)
-- [ ] Change Requests (open, review, inline comments, approve, merge)
-- [ ] @mentions and cross-references
-- [ ] Notifications (in-app + email)
-- [ ] Organizations and teams
-- [ ] Role-based permissions
+- [x] Issues (create, comment, label, close, search)
+- [x] Change Requests (open, review, inline comments, approve, merge)
+- [x] @mentions and cross-references
+- [x] Notifications (in-app + email)
+- [x] Organizations and teams
+- [x] Role-based permissions
 
 ### Phase 3 — Game-Dev Features (Weeks 19–26)
 
