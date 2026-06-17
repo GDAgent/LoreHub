@@ -673,11 +673,180 @@ a {
   color: var(--accent-strong);
 }
 
+.compact-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.asset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.asset-card h2 {
+  margin-top: 1rem;
+}
+
+.asset-preview {
+  min-height: 190px;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.image-preview {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--asset-accent) 58%, black), transparent 52%),
+    linear-gradient(45deg, color-mix(in srgb, var(--asset-secondary) 50%, black), transparent 58%),
+    linear-gradient(180deg, rgba(7, 14, 24, 0.4), rgba(7, 14, 24, 0.9));
+}
+
+.audio-preview {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-evenly;
+  gap: 0.25rem;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--asset-accent) 55%, transparent), transparent 40%),
+    rgba(7, 14, 24, 0.92);
+}
+
+.audio-preview span,
+.audio-diff-wave span {
+  width: 100%;
+  max-width: 12px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--asset-accent, #7fd1ff), var(--asset-secondary, #58f2c1));
+}
+
+.model-preview,
+.model-diff-wireframe {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(10, 18, 31, 0.1), rgba(10, 18, 31, 0.88)),
+    repeating-linear-gradient(45deg, rgba(127, 209, 255, 0.18) 0 2px, transparent 2px 16px),
+    repeating-linear-gradient(-45deg, rgba(88, 242, 193, 0.15) 0 2px, transparent 2px 16px);
+}
+
+.model-preview::after,
+.model-diff-wireframe::after {
+  content: "";
+  position: absolute;
+  inset: 18% 26%;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  transform: perspective(180px) rotateX(58deg) rotateZ(15deg);
+  box-shadow: 0 0 0 1px rgba(127, 209, 255, 0.12);
+}
+
+.video-preview {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 156, 172, 0.24), transparent 35%),
+    linear-gradient(180deg, rgba(7, 14, 24, 0.2), rgba(7, 14, 24, 0.88));
+}
+
+.video-preview::before {
+  content: "";
+  position: absolute;
+  inset: 28% auto auto 36%;
+  width: 0;
+  height: 0;
+  border-left: 42px solid rgba(255, 255, 255, 0.75);
+  border-top: 26px solid transparent;
+  border-bottom: 26px solid transparent;
+}
+
+.metadata-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.metadata-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-panel strong {
+  display: block;
+  font-size: 1.6rem;
+  margin-top: 0.35rem;
+}
+
+.pixel-diff-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pixel-diff-grid span {
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, rgba(255, 108, 122, 0.85), rgba(127, 209, 255, 0.75));
+}
+
+.audio-diff-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  min-height: 180px;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(7, 14, 24, 0.92);
+}
+
+.video-diff-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.video-diff-strip span {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+  border-radius: 0.8rem;
+  background: linear-gradient(180deg, rgba(255, 156, 172, 0.22), rgba(127, 209, 255, 0.18));
+}
+
+.tier-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tier-row {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tier-bar {
+  height: 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.tier-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(127, 209, 255, 0.85), rgba(88, 242, 193, 0.85));
+}
+
 @media (max-width: 900px) {
   .hero-grid,
   .grid.three,
   .grid.two,
-  .stats {
+  .stats,
+  .asset-grid {
     grid-template-columns: 1fr;
   }
 

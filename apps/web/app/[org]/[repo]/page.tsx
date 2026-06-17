@@ -15,6 +15,10 @@ const sections = [
   { label: "Branches", href: (org: string, repo: string) => `/${org}/${repo}/branches` },
   { label: "Issues", href: (org: string, repo: string) => `/${org}/${repo}/issues` },
   { label: "CRs", href: (org: string, repo: string) => `/${org}/${repo}/cr` },
+  { label: "Assets", href: (org: string, repo: string) => `/${org}/${repo}/assets` },
+  { label: "Locks", href: (org: string, repo: string) => `/${org}/${repo}/locks` },
+  { label: "Analytics", href: (org: string, repo: string) => `/${org}/${repo}/analytics` },
+  { label: "Obliterate", href: (org: string, repo: string) => `/${org}/${repo}/obliterate` },
   {
     label: "Diff",
     href: (org: string, repo: string) => `/${org}/${repo}/diff/7c91ae447bc2/f34ab29ce810`,
@@ -34,8 +38,8 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
             <div className="repo-path">{org} / {repo}</div>
             <h1>{repo}</h1>
             <p className="muted">
-              Repository home for the collaboration shell. Phase 2 adds issues, change requests,
-              mentions, notifications, teams, and permissions without breaking the Phase 1 VCS flow.
+              Repository home for the collaboration and game-dev shell. Phase 3 adds asset browsing,
+              binary diffs, locks, storage analytics, and obliteration workflows on top of the earlier phases.
             </p>
           </div>
           <Link className="button" href={`/${org}/${repo}/tree/${demoRevisions[0].hash}`}>
@@ -53,19 +57,19 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
 
       <section className="grid two">
         <article className="panel">
-          <h2>Phase 2 collaboration surface</h2>
+          <h2>Phase 3 game-dev surface</h2>
           <ul className="list">
-            <li>Issue search, labels, comments, and close flows now live alongside repo navigation.</li>
-            <li>Change requests support reviews, inline comments, approvals, and merges.</li>
-            <li>Org notifications, teams, and permission matrices are linked into the same shell.</li>
+            <li>Asset previews cover image, audio, 3D model, and video content.</li>
+            <li>Binary diffs expose pixel, waveform, geometry, frame, size, and chunk deltas.</li>
+            <li>Locks, analytics, and obliteration workflows are linked directly from the repo home.</li>
           </ul>
         </article>
         <article className="panel">
           <h2>Next backend milestones</h2>
           <ul className="list">
-            <li>Persist issue, CR, and notification state in the API and PostgreSQL.</li>
-            <li>Attach org roles and team membership to authenticated users and ACL checks.</li>
-            <li>Wire review approvals and merges to Lore-backed branch movement rules.</li>
+            <li>Back asset metadata and analytics with real Lore immutable and mutable metadata.</li>
+            <li>Wire lock operations and obliteration actions to Lore APIs and worker execution.</li>
+            <li>Replace the simulated binary diff data with actual fragment and preview analysis.</li>
           </ul>
         </article>
       </section>
@@ -87,10 +91,10 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
           </Link>
         </article>
         <article className="panel">
-          <h2>Active CR</h2>
-          <p className="muted">Change request !7 carries the current art pass, review discussion, and inline comments.</p>
-          <Link className="button-secondary" href={`/${org}/${repo}/cr/7`}>
-            Open change request !7
+          <h2>Active asset</h2>
+          <p className="muted">The hero corridor albedo now has a dedicated metadata page and binary diff view.</p>
+          <Link className="button-secondary" href={`/${org}/${repo}/assets/hero-corridor-albedo`}>
+            Open asset detail
           </Link>
         </article>
       </section>

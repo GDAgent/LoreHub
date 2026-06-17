@@ -839,12 +839,12 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ### Phase 3 — Game-Dev Features (Weeks 19–26)
 
-- [ ] Binary asset preview (image, audio, 3D model, video)
-- [ ] Binary diff (image pixel diff, size delta, chunk delta)
-- [ ] File locking dashboard
-- [ ] Storage analytics
-- [ ] Obliteration request workflow
-- [ ] Asset metadata display
+- [x] Binary asset preview (image, audio, 3D model, video)
+- [x] Binary diff (image pixel diff, size delta, chunk delta)
+- [x] File locking dashboard
+- [x] Storage analytics
+- [x] Obliteration request workflow
+- [x] Asset metadata display
 
 ### Phase 4 — CI/CD (Weeks 27–34)
 
@@ -864,13 +864,13 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 - [ ] LoreHub Cloud infrastructure (Fly.io / Hetzner)
 - [ ] Cloud billing integration
 - [ ] SLA dashboard (EE)
+- [ ] Mobile-responsive UI
 
 ### Phase 6 — Polish & Ecosystem (Ongoing)
 
 - [ ] Lore VS Code extension integration (link CRs to editor)
 - [ ] Webhooks (outbound HTTP triggers on push, CR events, CI completion)
 - [ ] Marketplace / integrations registry
-- [ ] Mobile-responsive UI
 - [ ] Accessibility audit (WCAG 2.1 AA)
 - [ ] Localization
 
