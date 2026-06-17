@@ -1,0 +1,7 @@
+target/
+node_modules/
+apps/web/.next/
+apps/web/out/
+.env
+.env.*
+!.env.example

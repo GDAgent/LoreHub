@@ -1,0 +1,11 @@
+[package]
+name = "lore-client"
+version.workspace = true
+edition.workspace = true
+license = "MIT"
+
+[dependencies]
+uuid.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

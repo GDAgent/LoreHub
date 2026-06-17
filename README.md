@@ -6,7 +6,28 @@ LoreHub is to Lore what GitHub is to Git, with GitLab's self-hosting model baked
 
 ## Status
 
-🚧 **Planning phase.** See [`PLAN.md`](./PLAN.md) for the full architecture, feature set, deployment model, and roadmap.
+🚧 **Phase 0 foundation in progress.** The repo now includes a Rust workspace scaffold, SQLx migrations, a minimal API and worker, a basic Next.js shell, and a Community Edition Compose stack. See [`PLAN.md`](./PLAN.md) for the full roadmap.
+
+## Repo Layout
+
+- `apps/api` — Axum API with repository CRUD and Lore JWT issuance
+- `apps/worker` — background worker process scaffold
+- `apps/web` — Next.js app router shell with auth and repository routes
+- `packages/lore-client` — Lore integration seam for partition provisioning
+- `packages/db-types` — shared Rust models for database-backed types
+- `migrations` — SQLx/PostgreSQL schema baseline
+- `infra/compose/docker-compose.yml` — CE deployment stack
+
+## Getting Started
+
+```bash
+cargo test --workspace
+npm install
+npm run build:web
+docker compose -f infra/compose/docker-compose.yml up --build
+```
+
+Set `LORE_SERVER_IMAGE` if you need to point Compose at a specific published Lore server image.
 
 ## Overview
 
