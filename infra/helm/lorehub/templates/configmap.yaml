@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "lorehub.fullname" . }}-config
+  labels:
+    {{- include "lorehub.labels" . | nindent 4 }}
+data:
+  DATABASE_URL: postgres://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:5432/{{ .Values.postgres.database }}
+  LORE_SERVER_URL: {{ .Values.loreServer.url | quote }}
+  REDIS_URL: redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}
+  NEXT_PUBLIC_API_BASE_URL: https://{{ .Values.ingress.host }}

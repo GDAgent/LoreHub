@@ -1,0 +1,43 @@
+global:
+  imagePullPolicy: IfNotPresent
+  loreJwtSecret: change-me
+
+api:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/gdagent/lorehub-api
+    tag: latest
+  service:
+    port: 8080
+
+web:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/gdagent/lorehub-web
+    tag: latest
+  service:
+    port: 3000
+
+worker:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/gdagent/lorehub-worker
+    tag: latest
+
+postgres:
+  host: lorehub-postgres
+  database: lorehub
+  user: postgres
+  password: postgres
+
+redis:
+  host: lorehub-redis
+  port: 6379
+
+loreServer:
+  url: http://lorehub-lore-server:8081
+
+ingress:
+  enabled: true
+  className: nginx
+  host: lorehub.example.com

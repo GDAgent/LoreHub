@@ -4,8 +4,8 @@ export default function AdminPage() {
       <section className="panel">
         <h1>Admin</h1>
         <p className="muted">
-          The admin surface is stubbed now so Phase 1 and Phase 2 work can attach health,
-          storage, and worker controls without rerouting the application.
+          The admin surface now covers enterprise identity, directory sync, auditability,
+          cloud billing, and SLA reporting alongside the earlier system controls.
         </p>
         <div className="grid two">
           <article className="panel">
@@ -23,6 +23,25 @@ export default function AdminPage() {
               <li>Redis cache and queue placeholder</li>
               <li>MinIO object storage baseline</li>
             </ul>
+          </article>
+        </div>
+        <div className="grid two top-gap">
+          <article className="panel">
+            <h2>Enterprise controls</h2>
+            <div className="stack-links">
+              <a href="/admin/enterprise/auth">SAML and OIDC</a>
+              <a href="/admin/enterprise/directory">LDAP sync</a>
+              <a href="/admin/enterprise/audit">Advanced audit log</a>
+              <a href="/admin/enterprise/sla">SLA dashboard</a>
+            </div>
+          </article>
+          <article className="panel">
+            <h2>Cloud operations</h2>
+            <div className="stack-links">
+              <a href="/admin/cloud/billing">Billing integration</a>
+              <a href="/acme/demo/pipelines">CI/CD overview</a>
+              <a href="/acme/demo/analytics">Storage analytics</a>
+            </div>
           </article>
         </div>
       </section>

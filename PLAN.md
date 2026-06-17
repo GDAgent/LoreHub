@@ -856,15 +856,15 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ### Phase 5 — Enterprise & Cloud (Weeks 35–50)
 
-- [ ] SAML/OIDC SSO (EE)
-- [ ] LDAP sync (EE)
-- [ ] Advanced audit log (EE)
-- [ ] Helm chart
-- [ ] One-liner installer script
-- [ ] LoreHub Cloud infrastructure (Fly.io / Hetzner)
-- [ ] Cloud billing integration
-- [ ] SLA dashboard (EE)
-- [ ] Mobile-responsive UI
+- [x] SAML/OIDC SSO (EE)
+- [x] LDAP sync (EE)
+- [x] Advanced audit log (EE)
+- [x] Helm chart
+- [x] One-liner installer script
+- [x] LoreHub Cloud infrastructure (Fly.io / Hetzner)
+- [x] Cloud billing integration
+- [x] SLA dashboard (EE)
+- [x] Mobile-responsive UI
 
 ### Phase 6 — Polish & Ecosystem (Ongoing)
 

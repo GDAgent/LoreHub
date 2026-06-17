@@ -6,8 +6,8 @@ export default function LoginPage() {
       <section className="panel form-card">
         <h1>Log in</h1>
         <p className="muted">
-          Auth pages are wired into the app router now so Phase 1 can layer in username,
-          OAuth, and organization-aware access control without reshaping navigation.
+          Auth pages now include enterprise sign-in entry points so OIDC and SAML can coexist
+          with the built-in email flow.
         </p>
         <form className="form-grid">
           <div className="field">
@@ -22,6 +22,14 @@ export default function LoginPage() {
             Continue
           </button>
         </form>
+        <div className="sso-card-list top-gap">
+          <Link className="button-secondary" href="/sso?provider=oidc-google-workspace">
+            Continue with Google Workspace
+          </Link>
+          <Link className="button-secondary" href="/sso?provider=saml-acme">
+            Continue with enterprise SAML
+          </Link>
+        </div>
         <p className="muted">
           Need an account? <Link href="/register">Create one</Link>.
         </p>
