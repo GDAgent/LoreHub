@@ -6,7 +6,34 @@ LoreHub is to Lore what GitHub is to Git, with GitLab's self-hosting model baked
 
 ## Status
 
-🚧 **Phase 0 foundation in progress.** The repo now includes a Rust workspace scaffold, SQLx migrations, a minimal API and worker, a basic Next.js shell, and a Community Edition Compose stack. See [`PLAN.md`](./PLAN.md) for the full roadmap.
+🚧 **Implementation scaffold with Phases 0-5 completed in-repo.**
+
+The repository now includes:
+
+- Rust workspace scaffolding for API, worker, shared DB types, and Lore integration seams
+- A Next.js application shell covering repository browsing, collaboration, game-dev, CI/CD, and enterprise/cloud admin surfaces
+- SQLx migrations and baseline repository CRUD flows
+- Community Edition Docker Compose deployment wiring
+- Enterprise and cloud deployment scaffolds including Helm, installer automation, and Terraform environment shapes
+
+Important: many product surfaces are currently implemented as structured demo-backed shells. The UI, route layout, deployment paths, and integration seams are in place, but several features still need production-grade persistence and direct Lore-backed execution. See [`PLAN.md`](./PLAN.md) for the architecture, roadmap, launch checklist, and rollout details.
+
+## Current Coverage
+
+Implemented in-repo today:
+
+- **Phase 0** foundation: workspace, migrations, API shell, worker shell, Compose stack
+- **Phase 1** VCS UI: tree browsing, revisions, branches, diff viewer, DAG, CLI push instructions
+- **Phase 2** collaboration: issues, change requests, notifications, teams, permissions
+- **Phase 3** game-dev features: asset browser, binary diff shells, locks, analytics, obliteration flows
+- **Phase 4** CI/CD: pipeline-as-code page flow, runner demo, artifact partition seams, WebSocket log streaming, CR gates
+- **Phase 5** enterprise/cloud: SSO pages, LDAP sync, audit log, Helm, installer, Terraform scaffolds, billing, SLA, responsive shell
+
+Still open:
+
+- production Lore transport and branch/revision execution
+- persistent collaboration and CI state beyond the demo-backed UI layer
+- Phase 6 polish, integrations, localization, and accessibility hardening
 
 ## Repo Layout
 
@@ -17,8 +44,55 @@ LoreHub is to Lore what GitHub is to Git, with GitLab's self-hosting model baked
 - `packages/db-types` — shared Rust models for database-backed types
 - `migrations` — SQLx/PostgreSQL schema baseline
 - `infra/compose/docker-compose.yml` — CE deployment stack
+- `infra/helm/lorehub` — Helm chart scaffold for EE/Cloud deployment
+- `infra/terraform` — cloud environment shapes for Fly.io and Hetzner
+- `scripts/install.sh` — one-line installer entry point for Compose or Helm
+- `docs/development` — contributor-oriented development workflow notes
+- `docs/deployment` — deployment-oriented docs and quick start material
+
+## Documentation Map
+
+- [`PLAN.md`](./PLAN.md) — architecture, roadmap, launch checklist, and execution details
+- [`docs/development/local-dev.md`](./docs/development/local-dev.md) — local contributor workflow
+- [`docs/deployment/quick-start.md`](./docs/deployment/quick-start.md) — fastest local/self-hosted paths
+- [`docs/deployment/fly.md`](./docs/deployment/fly.md) — Fly.io deployment notes
+- [`docs/deployment/hetzner.md`](./docs/deployment/hetzner.md) — Hetzner deployment notes
+- [`docs/deployment/enterprise-operations.md`](./docs/deployment/enterprise-operations.md) — enterprise deployment and rollout notes
+
+## For Developers
+
+### Tooling
+
+- Rust stable toolchain with `cargo`
+- Node.js 22+ and `npm`
+- Docker for the Compose path
+- Helm for Kubernetes-oriented deployment testing
+
+### Local Verification
+
+```bash
+cargo test --workspace
+npm install
+npm run build:web
+```
+
+### Local App Paths
+
+- API shell: `apps/api`
+- Worker shell and runner demo: `apps/worker`
+- Web application: `apps/web`
+- Lore integration seam: `packages/lore-client`
+
+### Development Notes
+
+- The web app intentionally uses demo-backed data modules for many end-user workflows until direct Lore and DB-backed execution is wired end-to-end.
+- The API already owns migration startup, JWT minting, repository CRUD, and pipeline log WebSocket streaming.
+- The worker already includes a CI runner demo path to exercise sparse-checkout and artifact-partition flow shape.
+- If you are extending a completed phase, prefer tightening existing seams rather than adding parallel scaffolds.
 
 ## Getting Started
+
+### Community Edition Compose
 
 ```bash
 cargo test --workspace
@@ -28,6 +102,45 @@ docker compose -f infra/compose/docker-compose.yml up --build
 ```
 
 Set `LORE_SERVER_IMAGE` if you need to point Compose at a specific published Lore server image.
+
+### Installer
+
+```bash
+./scripts/install.sh --mode compose
+./scripts/install.sh --mode helm --namespace lorehub --domain lorehub.example.com
+```
+
+### Helm
+
+```bash
+helm upgrade --install lorehub ./infra/helm/lorehub \
+  --namespace lorehub \
+  --create-namespace \
+  --set ingress.host=lorehub.example.com
+```
+
+## For Deployers
+
+### Deployment Paths
+
+- **Compose** for CE/local validation
+- **Helm** for EE or clustered/cloud-style rollouts
+- **Terraform env shapes** for Fly.io or Hetzner provisioning
+
+### Operational Expectations
+
+- Keep Lore server and PostgreSQL off the public network
+- Terminate public traffic at a reverse proxy or ingress layer
+- Treat the current Helm and Terraform assets as validated deployment scaffolds, not final production modules
+- Use the launch checklist in [`PLAN.md`](./PLAN.md) before any public or customer-facing rollout
+
+### Recommended Rollout Order
+
+1. Local Compose validation
+2. Single-environment Helm deployment
+3. External storage and managed database integration
+4. Enterprise identity configuration
+5. Monitoring, backups, and launch-readiness sign-off
 
 ## Overview
 

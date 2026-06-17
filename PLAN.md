@@ -23,7 +23,10 @@
 15. [UI/UX Principles](#15-uiux-principles)
 16. [Security Model](#16-security-model)
 17. [Development Roadmap](#17-development-roadmap)
-18. [Open Questions & Risks](#18-open-questions--risks)
+18. [Launch Checklist](#18-launch-checklist)
+19. [Developer Guide](#19-developer-guide)
+20. [Deployer Guide](#20-deployer-guide)
+21. [Open Questions & Risks](#21-open-questions--risks)
 
 ---
 
@@ -876,7 +879,138 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ---
 
-## 18. Open Questions & Risks
+## 18. Launch Checklist
+
+This section is the practical go/no-go list for moving LoreHub from repository scaffold to a public alpha or first customer deployment.
+
+### 18.1 Product Readiness
+
+- [ ] Replace demo-backed repository, collaboration, asset, and CI views with persisted API-backed flows where launch-critical
+- [ ] Complete direct Lore execution for branch, revision, asset, lock, and obliteration operations
+- [ ] Validate all enterprise auth and LDAP flows against at least one real provider in staging
+- [ ] Confirm every destructive flow has clear UI affordances and audit coverage
+- [ ] Review copy and terminology for Lore-native concepts such as revisions, partitions, and change requests
+
+### 18.2 Backend Readiness
+
+- [ ] Pin and document the exact Lore server version used for launch
+- [ ] Finalize repository, issue, change request, and pipeline persistence models in PostgreSQL
+- [ ] Harden worker job retry, timeout, and idempotency behavior
+- [ ] Add production observability for API latency, worker throughput, error rates, and pipeline execution
+- [ ] Validate artifact partition lifecycle and retention behavior
+
+### 18.3 Deployment Readiness
+
+- [ ] Validate Compose path for CE and Helm path for EE/Cloud
+- [ ] Verify secrets injection, TLS, ingress, and private-network boundaries
+- [ ] Test backups and restore for PostgreSQL plus Lore storage
+- [ ] Validate Terraform environment shapes for Fly.io and Hetzner against real accounts
+- [ ] Produce staging-to-production rollout steps and rollback instructions
+
+### 18.4 Security Readiness
+
+- [ ] Review JWT issuance and partition scoping rules
+- [ ] Confirm no secrets are committed to repo, demo data, or deployment assets
+- [ ] Validate audit visibility for role, policy, and identity changes
+- [ ] Test obliteration approval and execution controls
+- [ ] Document incident response and credential rotation procedure
+
+### 18.5 Launch Readiness
+
+- [ ] Prepare first-run documentation for developers and deployers
+- [ ] Prepare alpha onboarding flow for target studios or teams
+- [ ] Define support channel, issue triage path, and bug severity rubric
+- [ ] Confirm pricing, plan limits, and billing events for managed hosting
+- [ ] Run a full staging rehearsal using launch-like data and operational steps
+
+---
+
+## 19. Developer Guide
+
+This section documents how contributors should reason about the repository in its current state.
+
+### 19.1 Current Codebase Shape
+
+- `apps/api` owns the first real backend seams: config loading, migration startup, JWT issuance, repository CRUD, and pipeline log streaming
+- `apps/worker` owns background execution shape including the CI runner demo path and artifact flow scaffolding
+- `apps/web` currently mixes real route structure with demo-backed data modules to stabilize UX and information architecture before every backend flow is finalized
+- `packages/lore-client` is the key abstraction layer that must absorb future Lore transport changes
+
+### 19.2 Development Principles
+
+- Preserve route and component shape when replacing demo-backed logic with real API-backed flows
+- Prefer extending shared seams rather than creating separate temporary implementations
+- Treat completed phases as stable structure unless there is a strong reason to refactor them
+- Keep Lore-specific terminology consistent across code, docs, and UI copy
+
+### 19.3 Expected Local Workflow
+
+1. Run `cargo test --workspace`
+2. Run `npm install` if dependencies changed
+3. Run `npm run build:web`
+4. Use Compose for integrated smoke validation when deployment-related work changes
+
+### 19.4 Replacement Priorities
+
+The highest-value developer work after the current scaffold is:
+
+1. Real Lore transport and repository execution
+2. Persisted collaboration state and role enforcement
+3. Real pipeline execution and artifact storage
+4. Production-grade deployment hardening
+5. Accessibility, localization, and integration work
+
+### 19.5 Documentation References
+
+- `README.md` for top-level orientation
+- `docs/development/local-dev.md` for local workflow
+- `docs/deployment/*.md` for deployment-specific notes
+
+---
+
+## 20. Deployer Guide
+
+This section is for operators choosing between CE, EE, and managed-cloud style paths.
+
+### 20.1 Deployment Options
+
+- **Compose**: fastest path for CE and local evaluation
+- **Helm**: intended path for EE and clustered environments
+- **Terraform + platform-specific rollout**: intended path for first managed cloud footprints on Fly.io or Hetzner
+
+### 20.2 Current Asset Maturity
+
+- `infra/compose/docker-compose.yml` is the best local integration path today
+- `infra/helm/lorehub` is a deployment scaffold that needs image, secret, persistence, and ingress hardening before production use
+- `infra/terraform` defines environment shapes and module boundaries, not full production infrastructure yet
+- `scripts/install.sh` provides a consistent entry point for Compose or Helm installs
+
+### 20.3 Minimum Operational Expectations
+
+- Lore server and PostgreSQL stay private
+- web and API are the only public-facing services
+- PostgreSQL backups are automated and restore-tested
+- object storage lifecycle and cost model are reviewed
+- SSO, LDAP, audit log, and billing controls are tested in staging before customer rollout
+
+### 20.4 Recommended Rollout Sequence
+
+1. Validate the application locally with Compose
+2. Stand up a staging environment with Helm or platform-specific infrastructure
+3. Connect real identity, storage, and database services
+4. Run end-to-end CI, collaboration, and admin-control rehearsals
+5. Execute the launch checklist before exposing the instance publicly
+
+### 20.5 Documentation References
+
+- `docs/deployment/quick-start.md`
+- `docs/deployment/fly.md`
+- `docs/deployment/hetzner.md`
+- `docs/deployment/enterprise-operations.md`
+
+---
+
+## 21. Open Questions & Risks
 
 | Risk | Mitigation |
 |---|---|
