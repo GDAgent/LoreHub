@@ -810,23 +810,23 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ### Phase 0 — Foundation (Weeks 1–4)
 
-- [ ] Cargo workspace scaffold (`api`, `worker`, `lore-client`, `db-types`)
-- [ ] PostgreSQL schema and SQLx migration system
-- [ ] Lore server integration layer (`lore-client` crate wrapping `lore-capi` or gRPC)
-- [ ] JWT issuance for Lore partition access
-- [ ] Repository CRUD (create → provision Lore partition → register in DB)
-- [ ] Basic web UI shell (Next.js, routing, auth pages)
-- [ ] Docker Compose CE stack (api + web + lore-server + postgres + redis + minio)
+- [x] Cargo workspace scaffold (`api`, `worker`, `lore-client`, `db-types`)
+- [x] PostgreSQL schema and SQLx migration system
+- [x] Lore server integration layer (`lore-client` crate wrapping `lore-capi` or gRPC)
+- [x] JWT issuance for Lore partition access
+- [x] Repository CRUD (create → provision Lore partition → register in DB)
+- [x] Basic web UI shell (Next.js, routing, auth pages)
+- [x] Docker Compose CE stack (api + web + lore-server + postgres + redis + minio)
 
 ### Phase 1 — Core VCS UI (Weeks 5–10)
 
-- [ ] File browser (tree view at any revision)
-- [ ] File viewer (syntax highlight for code; binary detection)
-- [ ] Revision list and revision detail
-- [ ] Branch list and branch creation
-- [ ] Basic diff viewer (text; unified + side-by-side)
-- [ ] Revision DAG (d3 visualization)
-- [ ] Push via Lore CLI (LoreHub provides server URL + JWT; user uses Lore CLI)
+- [x] File browser (tree view at any revision)
+- [x] File viewer (syntax highlight for code; binary detection)
+- [x] Revision list and revision detail
+- [x] Branch list and branch creation
+- [x] Basic diff viewer (text; unified + side-by-side)
+- [x] Revision DAG (d3 visualization)
+- [x] Push via Lore CLI (LoreHub provides server URL + JWT; user uses Lore CLI)
 
 ### Phase 2 — Collaboration (Weeks 11–18)
 
