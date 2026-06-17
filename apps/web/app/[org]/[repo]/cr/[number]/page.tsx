@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { applyChangeRequestActions, getChangeRequest, getUser } from "@/lib/demo-collaboration";
+import { getPipelineGate } from "@/lib/demo-pipelines";
 import { RichText } from "@/lib/render-rich-text";
 import { getSearchParamValue } from "@/lib/search-params";
 
@@ -23,13 +24,20 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
     notFound();
   }
 
-  const view = applyChangeRequestActions(changeRequest, {
-    review: getSearchParamValue(queryParams.review),
+  const requestedReview = getSearchParamValue(queryParams.review);
+  const preMergeView = applyChangeRequestActions(changeRequest, {
+    review: requestedReview === "approve" ? "approve" : undefined,
     commentBody: getSearchParamValue(queryParams.commentBody),
     inlineComment: getSearchParamValue(queryParams.inlineComment),
     inlinePath: getSearchParamValue(queryParams.inlinePath),
     inlineLine: getSearchParamValue(queryParams.inlineLine),
   });
+  const preMergeApprovals = preMergeView.reviews.filter((review) => review.state === "approved").length;
+  const gate = getPipelineGate(changeRequest.number, preMergeApprovals);
+  const mergeBlocked = requestedReview === "merge" && !gate.canMerge;
+  const view = requestedReview === "merge" && gate.canMerge
+    ? applyChangeRequestActions(changeRequest, { review: "merge" })
+    : preMergeView;
   const author = getUser(view.author);
   const approvals = view.reviews.filter((review) => review.state === "approved").length;
 
@@ -55,12 +63,30 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
           <Link className="button-secondary" href={`/${org}/${repo}/cr/${view.number}?review=approve`}>
             Approve
           </Link>
-          <Link className="button-secondary" href={`/${org}/${repo}/cr/${view.number}?review=merge`}>
-            Merge
-          </Link>
+          {gate.canMerge ? (
+            <Link className="button-secondary" href={`/${org}/${repo}/cr/${view.number}?review=merge`}>
+              Merge
+            </Link>
+          ) : (
+            <span className="button-secondary button-disabled">Merge blocked</span>
+          )}
           <Link className="button-secondary" href={`/${org}/${repo}/diff/${view.baseRevision}/${view.headRevision}`}>
             Open diff
           </Link>
+        </div>
+        <div className="panel gate-panel top-gap">
+          <h2>CI status gate</h2>
+          <ul className="list">
+            <li>Approvals: {approvals} / {gate.approvalsRequired}</li>
+            <li>Pipeline: {gate.run ? `${gate.run.id} (${gate.run.status})` : "No pipeline run linked"}</li>
+            <li>Merge allowed: {gate.canMerge ? "yes" : "no"}</li>
+          </ul>
+          {gate.run ? (
+            <Link className="button-secondary top-gap-sm" href={`/${org}/${repo}/pipelines/${gate.run.id}`}>
+              Open pipeline run
+            </Link>
+          ) : null}
+          {mergeBlocked ? <p className="error-text top-gap-sm">Merge is blocked until the pipeline is green and approvals reach the branch protection threshold.</p> : null}
         </div>
       </section>
 

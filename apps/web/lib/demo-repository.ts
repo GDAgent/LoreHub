@@ -297,7 +297,47 @@ const snapshots: SnapshotMap = {
     },
   },
   "f34ab29ce810": {
-    "": { kind: "directory", children: ["README.md", "docs", "Source", "Content"] },
+    "": { kind: "directory", children: [".lorehub", "README.md", "docs", "Source", "Content"] },
+    ".lorehub": { kind: "directory", children: ["pipeline.yml"] },
+    ".lorehub/pipeline.yml": {
+      kind: "text",
+      language: "yaml",
+      size: 872,
+      content: `version: 1
+name: vertical-slice
+
+triggers:
+  push:
+    branches: [main, feature/*, art/*]
+  change_request:
+    types: [opened, updated]
+
+stages:
+  - validate
+  - build
+  - review-artifacts
+
+jobs:
+  validate:
+    stage: validate
+    runner: self-hosted-linux
+    steps:
+      - lore status --strict
+      - cargo test --workspace
+
+  build-demo:
+    stage: build
+    needs: [validate]
+    runner: self-hosted-linux
+    sparse:
+      - Content/Textures
+      - Content/Audio
+      - Content/Cinematics
+    steps:
+      - ./scripts/build-demo.sh
+      - lore artifact upload build/demo-windows.zip
+`,
+    },
     "README.md": {
       kind: "text",
       language: "markdown",

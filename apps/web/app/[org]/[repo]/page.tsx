@@ -15,6 +15,7 @@ const sections = [
   { label: "Branches", href: (org: string, repo: string) => `/${org}/${repo}/branches` },
   { label: "Issues", href: (org: string, repo: string) => `/${org}/${repo}/issues` },
   { label: "CRs", href: (org: string, repo: string) => `/${org}/${repo}/cr` },
+  { label: "Pipelines", href: (org: string, repo: string) => `/${org}/${repo}/pipelines` },
   { label: "Assets", href: (org: string, repo: string) => `/${org}/${repo}/assets` },
   { label: "Locks", href: (org: string, repo: string) => `/${org}/${repo}/locks` },
   { label: "Analytics", href: (org: string, repo: string) => `/${org}/${repo}/analytics` },
@@ -38,8 +39,8 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
             <div className="repo-path">{org} / {repo}</div>
             <h1>{repo}</h1>
             <p className="muted">
-              Repository home for the collaboration and game-dev shell. Phase 3 adds asset browsing,
-              binary diffs, locks, storage analytics, and obliteration workflows on top of the earlier phases.
+              Repository home for the collaboration, game-dev, and CI shell. Phase 4 adds pipeline-as-code, runner details,
+              WebSocket logs, Lore-backed artifact partitions, and CR merge gates.
             </p>
           </div>
           <Link className="button" href={`/${org}/${repo}/tree/${demoRevisions[0].hash}`}>
@@ -57,19 +58,19 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
 
       <section className="grid two">
         <article className="panel">
-          <h2>Phase 3 game-dev surface</h2>
+          <h2>Phase 4 CI/CD surface</h2>
           <ul className="list">
-            <li>Asset previews cover image, audio, 3D model, and video content.</li>
-            <li>Binary diffs expose pixel, waveform, geometry, frame, size, and chunk deltas.</li>
-            <li>Locks, analytics, and obliteration workflows are linked directly from the repo home.</li>
+            <li>Pipelines now expose YAML config, runner metadata, logs, and artifact partitions.</li>
+            <li>The API streams live demo job logs over WebSocket for the active run.</li>
+            <li>Change requests now show merge gates driven by approvals and CI state.</li>
           </ul>
         </article>
         <article className="panel">
           <h2>Next backend milestones</h2>
           <ul className="list">
-            <li>Back asset metadata and analytics with real Lore immutable and mutable metadata.</li>
-            <li>Wire lock operations and obliteration actions to Lore APIs and worker execution.</li>
-            <li>Replace the simulated binary diff data with actual fragment and preview analysis.</li>
+            <li>Persist pipeline definitions, runs, and logs in the API and metadata store.</li>
+            <li>Execute real sparse Lore checkouts in the worker runner instead of demo traces.</li>
+            <li>Attach environment deployment approvals and cache metrics to run detail views.</li>
           </ul>
         </article>
       </section>
@@ -95,6 +96,13 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
           <p className="muted">The hero corridor albedo now has a dedicated metadata page and binary diff view.</p>
           <Link className="button-secondary" href={`/${org}/${repo}/assets/hero-corridor-albedo`}>
             Open asset detail
+          </Link>
+        </article>
+        <article className="panel">
+          <h2>Active pipeline</h2>
+          <p className="muted">Run `run-107` is streaming logs for the art review build and currently gates merge on !7.</p>
+          <Link className="button-secondary" href={`/${org}/${repo}/pipelines/run-107`}>
+            Open pipeline run
           </Link>
         </article>
       </section>

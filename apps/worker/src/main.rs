@@ -1,3 +1,5 @@
+mod runner;
+
 use std::time::Duration;
 
 use lore_client::LoreClient;
@@ -16,6 +18,12 @@ async fn main() -> anyhow::Result<()> {
         std::env::var("LORE_SERVER_URL").unwrap_or_else(|_| "http://localhost:8081".to_owned());
 
     let lore_client = LoreClient::new(lore_server_url.clone());
+
+    if std::env::args().nth(1).as_deref() == Some("--runner-demo") {
+        runner::run_demo(&lore_client).await?;
+        return Ok(());
+    }
+
     let mut interval = tokio::time::interval(Duration::from_secs(30));
 
     tracing::info!(lore_server_url = %lore_client.server_url(), "worker started");

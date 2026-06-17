@@ -848,11 +848,11 @@ The LoreHub API server mints short-lived (15-minute) Lore JWTs scoped to the par
 
 ### Phase 4 — CI/CD (Weeks 27–34)
 
-- [ ] Pipeline YAML config (`.lorehub/pipeline.yml`)
-- [ ] Self-hosted runner agent (Rust binary using Lore CLI for workspace checkout)
-- [ ] Pipeline run log streaming (WebSocket)
-- [ ] Artifact storage via Lore partitions
-- [ ] CI status gates on Change Requests
+- [x] Pipeline YAML config (`.lorehub/pipeline.yml`)
+- [x] Self-hosted runner agent (Rust binary using Lore CLI for workspace checkout)
+- [x] Pipeline run log streaming (WebSocket)
+- [x] Artifact storage via Lore partitions
+- [x] CI status gates on Change Requests
 
 ### Phase 5 — Enterprise & Cloud (Weeks 35–50)
 
