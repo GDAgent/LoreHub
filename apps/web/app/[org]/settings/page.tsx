@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 
 import { demoMembers, getUser } from "@/lib/demo-collaboration";
 import { getSearchParamValue } from "@/lib/search-params";
@@ -42,14 +43,14 @@ export default async function OrganizationSettingsPage({ params, searchParams }:
             const isHighlighted = highlightedMember === member.username;
 
             return (
-              <>
-                <div key={`${member.username}-name`} className={`table-cell strong-cell ${isHighlighted ? "highlight-cell" : ""}`}>
+              <Fragment key={member.username}>
+                <div className={`table-cell strong-cell ${isHighlighted ? "highlight-cell" : ""}`}>
                   {user?.name ?? member.username}
                 </div>
-                <div key={`${member.username}-title`} className="table-cell">{user?.title ?? "Contributor"}</div>
-                <div key={`${member.username}-org`} className="table-cell">{member.orgRole}</div>
-                <div key={`${member.username}-repo`} className="table-cell">{member.repoRole}</div>
-              </>
+                <div className="table-cell">{user?.title ?? "Contributor"}</div>
+                <div className="table-cell">{member.orgRole}</div>
+                <div className="table-cell">{member.repoRole}</div>
+              </Fragment>
             );
           })}
         </div>

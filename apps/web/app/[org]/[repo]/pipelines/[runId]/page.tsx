@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Fragment } from "react";
 
 import { PipelineLogStream } from "@/components/pipeline-log-stream";
 import { getPipelineRun } from "@/lib/demo-pipelines";
@@ -91,12 +92,12 @@ export default async function PipelineRunPage({ params }: PipelineRunPageProps) 
           <div className="table-header">Size</div>
           <div className="table-header">Partition</div>
           {run.artifacts.map((artifact) => (
-            <>
-              <div key={`${artifact.name}-name`} className="table-cell strong-cell">{artifact.name}</div>
-              <div key={`${artifact.name}-path`} className="table-cell">{artifact.path}</div>
-              <div key={`${artifact.name}-size`} className="table-cell">{artifact.size}</div>
-              <div key={`${artifact.name}-partition`} className="table-cell">{artifact.partitionLabel}</div>
-            </>
+            <Fragment key={artifact.name}>
+              <div className="table-cell strong-cell">{artifact.name}</div>
+              <div className="table-cell">{artifact.path}</div>
+              <div className="table-cell">{artifact.size}</div>
+              <div className="table-cell">{artifact.partitionLabel}</div>
+            </Fragment>
           ))}
         </div>
       </section>

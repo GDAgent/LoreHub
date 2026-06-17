@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 import { ldapSnapshot } from "@/lib/demo-enterprise";
 
 export default function DirectoryPage() {
@@ -45,12 +47,12 @@ export default function DirectoryPage() {
           <div className="table-header">Status</div>
           <div className="table-header">Scope</div>
           {ldapSnapshot.mappedTeams.map((mapping) => (
-            <>
-              <div key={`${mapping.group}-group`} className="table-cell strong-cell">{mapping.group}</div>
-              <div key={`${mapping.group}-team`} className="table-cell">{mapping.team}</div>
-              <div key={`${mapping.group}-status`} className="table-cell">active</div>
-              <div key={`${mapping.group}-scope`} className="table-cell">org + repo roles</div>
-            </>
+            <Fragment key={mapping.group}>
+              <div className="table-cell strong-cell">{mapping.group}</div>
+              <div className="table-cell">{mapping.team}</div>
+              <div className="table-cell">active</div>
+              <div className="table-cell">org + repo roles</div>
+            </Fragment>
           ))}
         </div>
       </section>
