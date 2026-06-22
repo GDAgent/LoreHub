@@ -6,12 +6,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      lore-server:
-        condition: service_started
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/lorehub
+      # LORE_BACKEND=fake uses the in-process conformance-tested fake so the
+      # stack boots without a published lore-server. Set to "http" and start the
+      # lore profile (docker compose --profile lore up) for real Lore ops.
+      LORE_BACKEND: ${LORE_BACKEND:-fake}
       LORE_SERVER_URL: http://lore-server:8081
-      LORE_JWT_SECRET: local-development-secret-change-me
+      LORE_JWT_SECRET: ${LORE_JWT_SECRET:-local-development-secret-change-me}
       PORT: 8080
     ports:
       - "8080:8080"
@@ -25,9 +27,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      lore-server:
-        condition: service_started
     environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/lorehub
+      REDIS_URL: redis://redis:6379
+      LORE_BACKEND: ${LORE_BACKEND:-fake}
       LORE_SERVER_URL: http://lore-server:8081
 
   web:
@@ -76,9 +79,12 @@ services:
     volumes:
       - minio-data:/data
 
-  # Override LORE_SERVER_IMAGE if you publish a different lore-server image.
+  # Optional: a real lore-server. Not started by default (no public image yet).
+  # Enable with `docker compose --profile lore up` and set LORE_BACKEND=http.
+  # Override LORE_SERVER_IMAGE to point at your own build.
   lore-server:
     image: ${LORE_SERVER_IMAGE:-ghcr.io/epicgames/lore-server:latest}
+    profiles: ["lore"]
     ports:
       - "8081:8081"
 

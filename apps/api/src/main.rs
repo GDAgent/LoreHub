@@ -7,7 +7,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum::Router;
 use config::Config;
-use lore_client::LoreClient;
+use lore_client::{FakeLoreBackend, LoreBackend, LoreClient};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -17,7 +17,7 @@ use crate::auth::TokenIssuer;
 #[derive(Clone)]
 pub struct AppState {
     pub pool: sqlx::PgPool,
-    pub lore_client: LoreClient,
+    pub lore_client: Arc<dyn LoreBackend>,
     pub token_issuer: Arc<TokenIssuer>,
     pub lore_server_url: String,
 }
@@ -34,9 +34,20 @@ async fn main() -> anyhow::Result<()> {
 
     sqlx::migrate!("../../migrations").run(&pool).await?;
 
+    let lore_client: Arc<dyn LoreBackend> = match config.lore_backend.as_str() {
+        "http" => {
+            tracing::info!(url = %config.lore_server_url, "using http lore backend");
+            Arc::new(LoreClient::new(config.lore_server_url.clone()))
+        }
+        _ => {
+            tracing::info!("using in-process fake lore backend");
+            Arc::new(FakeLoreBackend::new())
+        }
+    };
+
     let app_state = AppState {
         pool,
-        lore_client: LoreClient::new(config.lore_server_url.clone()),
+        lore_client,
         token_issuer: Arc::new(TokenIssuer::new(
             config.lore_jwt_secret,
             config.lore_jwt_issuer,
