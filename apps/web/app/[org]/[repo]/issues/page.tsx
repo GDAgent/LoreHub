@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { buildCreatedIssue, getUser, listIssues } from "@/lib/demo-collaboration";
+import { buildCreatedIssue } from "@/lib/demo-collaboration";
 import { formatDate, labelStyle } from "@/lib/format";
+import { getIssues, type IssueRow } from "@/lib/repo-data";
 import { getSearchParamValue } from "@/lib/search-params";
 
 type IssuesPageProps = {
@@ -24,10 +25,32 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
   const labels = getSearchParamValue(queryParams.labels);
   const assignees = getSearchParamValue(queryParams.assignees);
 
-  const createdIssue = title?.trim() && body?.trim()
+  const created = title?.trim() && body?.trim()
     ? buildCreatedIssue({ title, body, labels, assignees })
     : null;
-  const allIssues = listIssues({ query, label });
+  const createdIssue: IssueRow | null = created
+    ? {
+        number: created.number,
+        title: created.title,
+        state: created.state,
+        labels: created.labels,
+        author: "You",
+        createdAt: created.createdAt,
+        commentCount: created.comments.length,
+      }
+    : null;
+
+  const { data: sourcedIssues, live } = await getIssues(org, repo);
+  const allIssues = sourcedIssues.filter((issue) => {
+    if (label !== "all" && !issue.labels.includes(label)) {
+      return false;
+    }
+    if (query) {
+      const haystack = `${issue.title} ${issue.labels.join(" ")}`.toLowerCase();
+      return haystack.includes(query.toLowerCase());
+    }
+    return true;
+  });
   const openCount = allIssues.filter((issue) => issue.state === "open").length;
   const closedCount = allIssues.filter((issue) => issue.state === "closed").length;
   const issues = state === "all" ? allIssues : allIssues.filter((issue) => issue.state === state);
@@ -84,6 +107,12 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
         </div>
 
         <div>
+          <div className="meta-row" style={{ justifyContent: "flex-end", marginBottom: "0.4rem" }}>
+            <span className="pill muted-pill" title={live ? "Served from the live API" : "Served from demo data (API unavailable)"}>
+              <span className={`merge-dot ${live ? "ok" : "muted"}`} style={{ width: 8, height: 8, display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
+              {live ? "live" : "demo"}
+            </span>
+          </div>
           <div className="filter-bar">
             <Link href={`${base}?state=open`} className={state === "open" ? "active" : undefined}>
               <CircleDot /> {openCount} Open
@@ -96,9 +125,7 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
             <div className="list-rows"><div className="empty-state" style={{ border: "none" }}>No issues match this filter.</div></div>
           ) : (
             <div className="list-rows">
-              {visibleIssues.map((issue) => {
-                const author = getUser(issue.author);
-                return (
+              {visibleIssues.map((issue) => (
                   <div key={issue.number} className="list-row">
                     <span className={`list-row-icon ${issue.state === "open" ? "state-open" : "state-closed"}`}>
                       {issue.state === "open" ? <CircleDot /> : <CheckCircle />}
@@ -114,14 +141,13 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
                       </div>
                       <div className="list-row-meta">
                         <span>#{issue.number}</span>
-                        <span>opened {formatDate(issue.createdAt)} by {author?.name ?? issue.author}</span>
+                        <span>opened {formatDate(issue.createdAt)} by {issue.author}</span>
                         {issue.milestone ? <span>· {issue.milestone}</span> : null}
-                        {issue.comments.length > 0 ? <span>💬 {issue.comments.length}</span> : null}
+                        {issue.commentCount > 0 ? <span>💬 {issue.commentCount}</span> : null}
                       </div>
                     </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
           )}
         </div>

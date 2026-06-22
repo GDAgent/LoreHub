@@ -1162,8 +1162,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [ ] Search indexing (Meilisearch), email/webhook dispatch, storage-analytics computation, obliteration execution.
 
 ### 24.6 Frontend ↔ backend wiring
-- [ ] Introduce **React Query** (+ a small typed API client); replace `demo-*` modules page-by-page with live data while preserving route/component shape (per §19.2).
-- [ ] Mutations with optimistic UI + toasts; auth-gated routes; real session state.
+- [~] Typed API client (`apps/web/lib/api.ts`) + data layer (`lib/repo-data.ts`) with **live-then-demo fallback**; issues list + detail now render live API data (verified end-to-end: DB-only issue renders in the browser; demo fallback when API down), with a live/demo source indicator. *(TODO: wire CRs/branches/locks — needs `cr_labels` + approvals in the API; introduce React Query for client-side cache; remaining pages page-by-page.)*
+- [ ] Mutations with optimistic UI + toasts; auth-gated routes; real session state. *(Issue create/comment/close persist via API endpoints today; web forms still use GET-based optimistic previews — upgrade to server actions next.)*
 
 ---
 
