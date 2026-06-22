@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { CommandPalette } from "@/components/command-palette";
@@ -20,6 +21,10 @@ export function SiteHeader() {
   const [theme, setTheme] = useState<Theme>("light");
   const [userOpen, setUserOpen] = useState(false);
   const userRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const isAuthRoute = ["/login", "/register", "/sso"].some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
 
   useEffect(() => {
     const current = (document.documentElement.getAttribute("data-theme") as Theme) || "light";
@@ -49,6 +54,26 @@ export function SiteHeader() {
 
   function openPalette() {
     window.dispatchEvent(new Event("lorehub:open-palette"));
+  }
+
+  // Auth routes (login/register/SSO) get a minimal header — no app nav, search,
+  // notifications, or user menu, since there is no signed-in session yet.
+  if (isAuthRoute) {
+    return (
+      <header className="site-header">
+        <div className="shell site-header-inner">
+          <Link className="brand" href="/">
+            <span className="brand-mark">L</span>
+            <span>LoreHub</span>
+          </Link>
+          <div className="header-actions" style={{ marginLeft: "auto" }}>
+            <button className="icon-button" type="button" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            </button>
+          </div>
+        </div>
+      </header>
+    );
   }
 
   return (
