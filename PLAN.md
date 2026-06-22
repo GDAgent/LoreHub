@@ -1121,7 +1121,7 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] **Branches** (list rows, default/new badges, new-branch form, new-CR action) and **Revisions** (commit rows with diff stats + sticky revision-graph sidebar) rebuilt with the repo tab bar.
 - [x] **Locks, Obliteration, Analytics**: locks list with lock/unlock affordances + empty state; obliteration requests with status pills and a destructive new-request flow; storage analytics with stat cards, tier-breakdown bars, store composition, and per-asset chunk table. *(All rebuilt on the repo tab bar.)*
 - [x] **Settings** (repo/org) + **Teams** + **Notifications**: repo settings with general form, branch protection, access/role tables, and a danger zone; org settings with section nav, profile form, members table, policies; teams as list rows with a popover create form; notifications with filter pills, unread styling, and list rows. *(User settings page + real validation land with Workstream B.)*
-- [ ] **Admin + Enterprise** (auth/SSO, directory/LDAP, audit, SLA, cloud billing): real dashboard layouts.
+- [x] **Admin + Enterprise** (auth/SSO, directory/LDAP, audit, SLA, cloud billing): unified admin shell with a shared tab bar; overview with stat cards + service-health table; SSO provider cards; directory sync with stats, connection details, and group-mapping table; audit log with search + severity filter pills and list rows; SLA dashboard with stat cards + incident list; billing with usage stat cards + invoice table.
 - [x] **Auth pages**: centered branded login/register/SSO cards with required-field hints, SSO provider buttons, and a divider. *(Real client-side validation/error states land with Workstream B auth.)*
 
 ### 23.5 Quality bars

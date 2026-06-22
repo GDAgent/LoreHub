@@ -1,49 +1,49 @@
+import { AdminTabs } from "@/components/admin-tabs";
 import { billingInvoices, billingMetrics } from "@/lib/demo-enterprise";
 
 export default function CloudBillingPage() {
   return (
     <main className="shell page">
-      <section className="panel">
-        <div className="repo-path">admin / cloud</div>
-        <h1>Cloud billing</h1>
-        <p className="muted">
-          Billing integrates plan usage, seats, storage, and invoice status so LoreHub Cloud can tie platform metrics directly to customer billing.
-        </p>
+      <section>
+        <div className="eyebrow">Administration</div>
+        <AdminTabs active="billing" />
       </section>
 
-      <section className="grid two top-gap">
-        <article className="panel">
-          <h2>Usage metrics</h2>
-          <div className="grid two top-gap-sm">
-            {billingMetrics.map((metric) => (
-              <div key={metric.label} className="stat">
-                <strong>{metric.value}</strong>
-                <span>{metric.label}</span>
-                <p className="muted top-gap-sm">{metric.note}</p>
-              </div>
-            ))}
-          </div>
-        </article>
+      <div className="section-header">
+        <div>
+          <h1 style={{ margin: 0 }}>Cloud billing</h1>
+          <p className="muted" style={{ margin: "0.35rem 0 0" }}>Plan usage, seats, storage, and invoice status — tying platform metrics directly to billing.</p>
+        </div>
+        <button className="button-secondary" type="button">Manage plan</button>
+      </div>
 
-        <article className="panel">
-          <h2>Invoices</h2>
-          <div className="comment-thread top-gap-sm">
+      <section className="grid four">
+        {billingMetrics.map((metric) => (
+          <article key={metric.label} className="panel stat-panel">
+            <span className="muted">{metric.label}</span>
+            <strong>{metric.value}</strong>
+            <p className="muted" style={{ margin: "0.4rem 0 0", fontSize: "0.82rem" }}>{metric.note}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="panel">
+        <h2 style={{ marginTop: 0 }}>Invoices</h2>
+        <table className="table">
+          <thead>
+            <tr><th>Invoice</th><th>Period</th><th style={{ textAlign: "right" }}>Amount</th><th>Status</th></tr>
+          </thead>
+          <tbody>
             {billingInvoices.map((invoice) => (
-              <article key={invoice.id} className="comment-card">
-                <div className="section-header">
-                  <div>
-                    <div className="meta-row">
-                      <span className="pill">{invoice.id}</span>
-                      <span className={`pill ${invoice.status === "paid" ? "success-pill" : "warn-pill"}`}>{invoice.status}</span>
-                    </div>
-                    <h3>{invoice.amount}</h3>
-                  </div>
-                  <span className="muted">{invoice.period}</span>
-                </div>
-              </article>
+              <tr key={invoice.id}>
+                <td><code style={{ fontSize: "0.82rem" }}>{invoice.id}</code></td>
+                <td className="muted">{invoice.period}</td>
+                <td style={{ textAlign: "right" }}><strong>{invoice.amount}</strong></td>
+                <td><span className={`pill ${invoice.status === "paid" ? "success-pill" : "warn-pill"}`}>{invoice.status}</span></td>
+              </tr>
             ))}
-          </div>
-        </article>
+          </tbody>
+        </table>
       </section>
     </main>
   );

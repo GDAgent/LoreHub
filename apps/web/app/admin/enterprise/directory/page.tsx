@@ -1,60 +1,66 @@
-import { Fragment } from "react";
-
+import { AdminTabs } from "@/components/admin-tabs";
 import { ldapSnapshot } from "@/lib/demo-enterprise";
+import { formatDateTime } from "@/lib/format";
 
 export default function DirectoryPage() {
   return (
     <main className="shell page">
+      <section>
+        <div className="eyebrow">Administration</div>
+        <AdminTabs active="directory" />
+      </section>
+
+      <div className="section-header">
+        <div>
+          <h1 style={{ margin: 0 }}>LDAP / directory sync</h1>
+          <p className="muted" style={{ margin: "0.35rem 0 0" }}>Keep enterprise org membership and team mappings in step with your identity infrastructure.</p>
+        </div>
+        <span className={`pill ${ldapSnapshot.status === "healthy" ? "success-pill" : "warn-pill"}`}>{ldapSnapshot.status}</span>
+      </div>
+
+      <section className="grid four">
+        <article className="panel stat-panel"><span className="muted">Users synced</span><strong>{ldapSnapshot.syncedUsers}</strong></article>
+        <article className="panel stat-panel"><span className="muted">Groups synced</span><strong>{ldapSnapshot.syncedGroups}</strong></article>
+        <article className="panel stat-panel"><span className="muted">Interval</span><strong>{ldapSnapshot.interval}</strong></article>
+        <article className="panel stat-panel"><span className="muted">Last run</span><strong style={{ fontSize: "1rem" }}>{formatDateTime(ldapSnapshot.lastRun)}</strong></article>
+      </section>
+
       <section className="grid two">
         <article className="panel">
-          <div className="repo-path">admin / enterprise</div>
-          <h1>LDAP sync</h1>
-          <p className="muted">
-            Directory sync keeps enterprise org membership and team mappings in step with existing identity infrastructure.
-          </p>
-          <ul className="list top-gap-sm">
-            <li>Host: {ldapSnapshot.host}</li>
-            <li>Base DN: {ldapSnapshot.baseDn}</li>
-            <li>Bind user: {ldapSnapshot.bindUser}</li>
-            <li>Last run: {ldapSnapshot.lastRun.replace("T", " ").replace("Z", " UTC")}</li>
-            <li>Sync interval: {ldapSnapshot.interval}</li>
-          </ul>
-        </article>
-
-        <article className="panel">
-          <h2>Sync health</h2>
-          <div className="grid two top-gap-sm">
-            <div className="stat">
-              <strong>{ldapSnapshot.syncedUsers}</strong>
-              <span className="muted">Users synced</span>
-            </div>
-            <div className="stat">
-              <strong>{ldapSnapshot.syncedGroups}</strong>
-              <span className="muted">Groups synced</span>
-            </div>
+          <h2 style={{ marginTop: 0 }}>Connection</h2>
+          <div className="metadata-list">
+            <div className="metadata-row"><span className="muted">Host</span><code style={{ fontSize: "0.8rem" }}>{ldapSnapshot.host}</code></div>
+            <div className="metadata-row"><span className="muted">Base DN</span><code style={{ fontSize: "0.8rem" }}>{ldapSnapshot.baseDn}</code></div>
+            <div className="metadata-row"><span className="muted">Bind user</span><code style={{ fontSize: "0.8rem" }}>{ldapSnapshot.bindUser}</code></div>
           </div>
-          <div className="meta-row top-gap-sm">
-            <span className={`pill ${ldapSnapshot.status === "healthy" ? "success-pill" : "warn-pill"}`}>{ldapSnapshot.status}</span>
+        </article>
+        <article className="panel">
+          <h2 style={{ marginTop: 0 }}>Actions</h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            <button className="button" type="button">Run sync now</button>
+            <button className="button-secondary" type="button">Edit connection</button>
+            <button className="button-secondary" type="button">Test bind</button>
           </div>
         </article>
       </section>
 
-      <section className="panel top-gap">
-        <h2>Group mappings</h2>
-        <div className="table-grid member-table top-gap-sm">
-          <div className="table-header">Directory group</div>
-          <div className="table-header">LoreHub team</div>
-          <div className="table-header">Status</div>
-          <div className="table-header">Scope</div>
-          {ldapSnapshot.mappedTeams.map((mapping) => (
-            <Fragment key={mapping.group}>
-              <div className="table-cell strong-cell">{mapping.group}</div>
-              <div className="table-cell">{mapping.team}</div>
-              <div className="table-cell">active</div>
-              <div className="table-cell">org + repo roles</div>
-            </Fragment>
-          ))}
-        </div>
+      <section className="panel">
+        <h2 style={{ marginTop: 0 }}>Group mappings</h2>
+        <table className="table">
+          <thead>
+            <tr><th>Directory group</th><th>LoreHub team</th><th>Status</th><th>Scope</th></tr>
+          </thead>
+          <tbody>
+            {ldapSnapshot.mappedTeams.map((mapping) => (
+              <tr key={mapping.group}>
+                <td><code style={{ fontSize: "0.82rem" }}>{mapping.group}</code></td>
+                <td><strong>{mapping.team}</strong></td>
+                <td><span className="pill success-pill">active</span></td>
+                <td className="muted">org + repo roles</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
     </main>
   );
