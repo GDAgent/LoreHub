@@ -1051,3 +1051,179 @@ This section is for operators choosing between CE, EE, and managed-cloud style p
 | 00010 — Fragment max size | Large file upload in web UI must chunk at ≤fragment max size |
 | 00011 — CLI frontend | LoreHub web UI supplements but doesn't replace the Lore CLI |
 | 00016 — Compression (Zstandard) | LoreHub storage analytics shows compressed vs uncompressed sizes |
+
+---
+
+# Part II — Production Readiness Plan (Reality Assessment & Remediation Roadmap)
+
+> **Status of this document.** Part I (sections 1–21) is the *original aspirational plan*. The Phase 1–5 checkboxes in §17 mark **structure that exists**, not features that are production-ready. This Part II is the honest, working remediation plan: what is actually built today, what is missing, and the concrete improvements to make it a real GitHub/GitLab-class product. Where Part II and Part I disagree, **Part II wins.**
+
+## 22. Honest Current-State Assessment (as of this audit)
+
+### 22.1 What actually exists
+
+| Area | Reality | Verdict |
+|---|---|---|
+| **Frontend** | ~5,000 LOC across 46 files; Next.js 15 App Router; full route skeleton present (repo, tree, issues, CR, pipelines, assets, admin, auth, enterprise) | Route IA is good; everything else is a shell |
+| **Frontend data** | Nearly every page renders **static demo data** from `apps/web/lib/demo-*.ts`. No real fetching, no mutations, no persistence | Prototype, not product |
+| **Styling** | Hand-rolled **1,000-line `globals.css`** using dark glassmorphism (gradients, blur, rounded "panel" cards). **No Tailwind, no shadcn/ui** despite §5 claiming them. No design tokens beyond a few CSS vars, no component library, no light mode | Looks like a generic landing page, not a dev platform; primary source of "ugly" |
+| **Backend (API)** | ~760 LOC of Rust total. `health`, partial repository routes, a stub `auth.rs` JWT issuer, stub `pipelines.rs`, `error.rs`, `config.rs` | Skeleton only |
+| **Lore integration** | `packages/lore-client` is ~87 LOC and does **not** speak to a real Lore server (no FFI, no gRPC) | Not implemented |
+| **Database** | One baseline migration; SQLx wiring partial; most tables from §13 not exercised by code | Not real |
+| **Worker** | `main.rs` + `runner.rs` (~110 LOC); CI runner is a demo path; no real queue, no streaming-from-real-jobs | Scaffold |
+| **Auth/sessions** | No real login, no session store, no password hashing in use, no OAuth, SSO/LDAP are demo UI only | Not real |
+| **CI/CD** | YAML schema and a UI; no real runner executing real pipelines against real revisions | Not real |
+| **Infra** | Compose/Helm/Terraform/`install.sh` are scaffolds with TODO-level maturity | Not deploy-ready |
+| **Docs** | README + a few `docs/` stubs; deployment/ops/release docs incomplete | Incomplete |
+| **Tests** | Minimal Rust tests; no frontend tests, no e2e, no CI quality gates | Missing |
+
+### 22.2 Implication
+
+"Phases 1–5 complete" is true only as *navigational scaffolding*. To become a credible competitor the project needs: (1) a real design system and rebuilt UI, (2) a real backend with real persistence/auth, (3) real Lore + CI execution, (4) Phase 6, (5) complete docs + hardened deploy. This is a **multi-session program**, sequenced below.
+
+---
+
+## 23. Workstream A — UI/UX Overhaul (highest visible priority)
+
+Goal: stop looking like a prototype; match the polish and information density of GitHub/GitLab.
+
+### 23.1 Design system foundation
+- [~] Adopt **Tailwind CSS v4 + shadcn/ui** (as §5 always intended) and retire the bespoke `globals.css` incrementally. *(Done differently: rebuilt `globals.css` as a full semantic-token design system keyed to the shared class vocabulary so all 46 pages lifted at once without a per-page migration. Tailwind/shadcn remains an optional later step — the token layer is what they would have provided.)*
+- [x] Define **design tokens**: color scales (neutral/brand/success/warning/danger/info), spacing, radius, typography scale, elevation/shadows, focus rings, z-index layers.
+- [x] **Light + dark themes** with `prefers-color-scheme` + manual toggle persisted per user (no-FOUC init script in `layout.tsx`, toggle in the header). Default is a clean, high-contrast light theme.
+- [x] Typography: system/`Inter` UI font + a real **monospace** stack for code, hashes, diffs, branch names.
+- [~] Iconography: inline SVG icon set in the header/palette (lucide-react not added to avoid a new dependency; can swap later).
+
+### 23.2 Core component library (shadcn-based, app-specific wrappers)
+- [ ] Primitives: Button (variants/sizes/loading), Input, Textarea, Select, Combobox, Checkbox, Radio, Switch, Tooltip, Dropdown menu, Dialog/Modal, Sheet/Drawer, Tabs, Toast, Popover, Avatar, Badge/Label chip, Skeleton loaders, Spinner, Pagination, Breadcrumbs, EmptyState, Banner/Callout.
+- [ ] App composites: **AppShell** (top bar + contextual left nav), repo header with tab bar, file/code blocks with line numbers + copy, Markdown renderer (GFM, task lists, mentions, issue refs, code highlighting), comment/thread component, label/state pills, **CommitHash/RevisionHash** with copy, **CodeOwners/Avatar stacks**, key-value metadata lists, data tables with sort/filter.
+- [ ] Loading/empty/error states for **every** list and detail view (no blank screens).
+
+### 23.3 Global navigation & IA
+- [x] Real **global top bar**: brand, global search trigger, notifications bell, user avatar menu with dropdown. *(Create (+) menu still TODO.)*
+- [x] **Command palette** (⌘K) for jump-to repo/issue/CR, actions, and navigation (`components/command-palette.tsx`).
+- [x] Reusable repo **tab bar** with active state (`components/repo-tabs.tsx`); top tabs on repo pages. *(Contextual left nav on deep pages still TODO.)*
+- [ ] Consistent breadcrumbs: `org / repo / section / item`.
+- [ ] Real user/org/repo switching.
+
+### 23.4 Page-by-page rebuild (visual + interaction)
+- [x] **Marketing/home** (logged-out): credible product landing (hero, push snippet, feature grid, comparison) — replaced "Phase 0 scaffold" copy.
+- [ ] **Dashboard** (logged-in): activity feed, your repos, assigned issues/CRs.
+- [ ] **Explore**: searchable/filterable repo discovery cards.
+- [x] **Repo home**: README render, About sidebar (visibility, storage-savings widget, branches/revisions), file list, clone/push entry. *(Branch/revision picker + languages bar still TODO.)*
+- [ ] **Code tree + file viewer**: breadcrumb path, syntax highlight, blame-style metadata, binary/asset preview routing, raw/download, copy-permalink.
+- [ ] **Revisions list + revision detail**: rich rows, **revision DAG** redesigned (legible, zoom/pan, hover cards).
+- [ ] **Diff viewer**: unified + split, file tree of changed paths, inline comment affordance, binary/image/audio/3D diff surfaces.
+- [ ] **Issues list + detail**: filters, labels, milestones, assignees, bulk actions, threaded comments, timeline events.
+- [ ] **Change Requests list + detail**: review UI, approvals, CI status checks panel, conflict/diverged banners, merge box with rules, draft state.
+- [ ] **Pipelines list + run detail**: stage/job DAG, live log streaming UI, artifacts, re-run/cancel.
+- [ ] **Assets browser + asset detail**: grid/list, type filters, image/audio/3D/video preview, metadata, dedup/"find duplicates".
+- [ ] **Locks, Obliteration, Analytics**: production-grade dashboards with clear destructive affordances.
+- [ ] **Settings** (repo/org/user): tabbed forms with validation, danger zones.
+- [ ] **Admin + Enterprise** (auth/SSO, directory/LDAP, audit, SLA, cloud billing): real dashboard layouts.
+- [ ] **Auth pages**: polished login/register/SSO with validation and error states.
+
+### 23.5 Quality bars
+- [ ] Fully **responsive** (mobile → ultrawide) with sensible breakpoints.
+- [ ] **Accessibility**: keyboard nav, focus management, ARIA, color-contrast AA, reduced-motion.
+- [ ] Consistent **toasts/optimistic UI** for mutations once backend is wired.
+- [ ] Performance: code-split heavy viewers (Monaco/3D), lazy-load previews.
+
+---
+
+## 24. Workstream B — Backend & Data (make it real)
+
+### 24.1 Persistence
+- [ ] Finalize the full PostgreSQL schema from §13 + additions: sessions, api_tokens, oauth_identities, org_members, teams, team_members, repo_collaborators, roles/permissions, labels, milestones, issue/cr comments, reactions, reviews/approvals, notifications, webhooks, pipeline jobs/logs/artifacts, storage_stats, releases/tags.
+- [ ] Real **SQLx** queries (compile-time checked) for every entity; migrations runnable from a clean DB.
+- [ ] Seed/fixtures for local dev that mirror the current demo data so the UI keeps working during migration.
+
+### 24.2 API surface
+- [ ] Implement the REST endpoints in §14 for real (repos, tree, blob, diff, branches, locks, links, issues, CRs, obliterate, analytics) + auth, orgs/teams/members, notifications, webhooks, search, pipelines.
+- [ ] Consistent error envelope, pagination, filtering, rate limiting, request IDs.
+- [ ] OpenAPI spec generated/maintained; typed client for the frontend.
+
+### 24.3 Auth & authz
+- [ ] Real **username/password** (argon2/bcrypt), session cookies + CSRF, **API tokens** (scoped, expiring).
+- [ ] **OAuth2** (GitHub/Google/GitLab) social login.
+- [ ] Role-based authorization enforced server-side (Owner/Maintainer/Developer/Reporter/Guest) at org and repo scope.
+- [ ] Short-lived **Lore-scoped JWT** minting per §16 once Lore transport exists.
+
+### 24.4 Lore integration (`packages/lore-client`)
+- [ ] Define the transport seam (gRPC wire and/or `lore-capi` FFI) behind a stable trait.
+- [ ] Implement: partition provisioning, list/read revisions, browse tree, fetch blob, branch list/create, diff, locks, links, obliteration two-phase, metadata read/write.
+- [ ] Pin and document the exact Lore server version; integration tests against a real `lore-server` in Compose.
+- [ ] Until a real Lore server is available, ship a **conformance-tested fake** implementing the same trait so the rest of the stack is real.
+
+### 24.5 Worker & CI
+- [ ] Real task queue (Redis-backed) with retry/timeout/idempotency.
+- [ ] **Real CI runner**: pick up pipeline runs, check out sparse workspace via Lore, execute YAML stages/jobs, stream logs over WebSocket, store artifacts as Lore revisions, report status back to CRs.
+- [ ] Search indexing (Meilisearch), email/webhook dispatch, storage-analytics computation, obliteration execution.
+
+### 24.6 Frontend ↔ backend wiring
+- [ ] Introduce **React Query** (+ a small typed API client); replace `demo-*` modules page-by-page with live data while preserving route/component shape (per §19.2).
+- [ ] Mutations with optimistic UI + toasts; auth-gated routes; real session state.
+
+---
+
+## 25. Workstream C — Phase 6 (Polish & Ecosystem)
+
+- [ ] **Webhooks**: outbound HTTP on push/CR/CI events; delivery log + retry; signing secret; management UI.
+- [ ] **Integrations/marketplace** registry (initial: status checks, chat notifications).
+- [ ] **VS Code / editor** linkage (open CR/file in editor; deep links).
+- [ ] **Accessibility audit** to WCAG 2.1 AA (formalize 23.5).
+- [ ] **Localization** scaffolding (i18n framework, externalized strings, at least en + one locale).
+
+---
+
+## 26. Workstream D — Documentation (release-grade)
+
+- [ ] **README** rewrite: accurate status, screenshots, quick-start, architecture diagram, links.
+- [ ] **Developer docs**: local setup (Compose), running api/web/worker, migrations, test commands, code map, contribution guide, coding standards.
+- [ ] **Deployment docs**: quick-start (CE), self-host hardening, Compose reference, Helm, Terraform (Fly.io, Hetzner), Railway/Render, TLS/ingress/secrets, backup & restore, upgrade & rollback.
+- [ ] **Operations runbooks**: monitoring, on-call/incident response, credential rotation, maintenance mode, scaling.
+- [ ] **Admin/Enterprise docs**: SSO/SAML/OIDC setup, LDAP sync, audit export, license management, SLA dashboard.
+- [ ] **API docs**: OpenAPI reference + GraphQL schema + auth/token guide + webhooks.
+- [ ] **User guide**: repos, change requests, issues, pipelines, assets, locks, obliteration; Lore CLI push workflow.
+- [ ] **Pricing/plans + billing** docs for Cloud; license/edition matrix (CE/EE/Cloud).
+- [ ] **Security docs**: threat model summary, responsible disclosure, data isolation, GDPR/obliteration.
+
+---
+
+## 27. Workstream E — Infra, Deploy & Release Hardening
+
+- [ ] Real multi-stage **Dockerfiles** (api/web/worker) that build from clean checkout.
+- [ ] **Compose** CE stack that boots end-to-end (api+web+worker+postgres+redis+minio+lore-server+caddy) with `.env.example`.
+- [ ] **Helm** chart: images, secrets, persistence, ingress, resources, probes.
+- [ ] **Terraform**: working Fly.io and Hetzner environments validated against real accounts.
+- [ ] **`install.sh`/`upgrade.sh`**: idempotent, OS-detecting, interactive setup wizard.
+- [ ] **CI for LoreHub itself** (GitHub Actions): build, test, lint, typecheck, image publish, preview deploy.
+- [ ] **Observability**: structured logs, Prometheus metrics, Grafana dashboards, healthchecks.
+- [ ] Backups + restore tested for Postgres and Lore mutable store; object-storage lifecycle documented.
+
+---
+
+## 28. Workstream F — Quality, Security & Testing
+
+- [ ] **Rust**: unit + integration tests; `clippy` clean; `cargo test --workspace` gate.
+- [ ] **Frontend**: typecheck strict, component tests (Vitest/RTL), **Playwright e2e** for core flows.
+- [ ] **Security**: review JWT/partition scoping, secret handling (none in repo/logs), authz enforcement, obliteration controls, IP allowlisting (EE), dependency audit.
+- [ ] **Accessibility** automated checks (axe) in CI.
+- [ ] Performance budgets for key pages (Core Web Vitals).
+
+---
+
+## 29. Recommended Execution Sequence
+
+This is the order that maximizes felt progress while de-risking the hard parts:
+
+1. **A1–A3 (design system + shell + nav)** — establish the look/feel foundation everything else inherits.
+2. **A4 high-traffic pages** — home/dashboard, repo home, code tree+file, issues, CRs, pipelines (visual rebuild on a fake-but-shaped data layer).
+3. **B1–B3 (schema, API, auth)** — stand up real persistence + auth.
+4. **B6 wiring** — replace demo modules with live data on the rebuilt pages, page-by-page.
+5. **B4–B5 (Lore client + worker/CI)** — real VCS + pipeline execution (or conformance-tested fake until a Lore server is pinned).
+6. **C (Phase 6)** — webhooks, integrations, a11y audit, i18n.
+7. **D + E + F** — docs, deploy hardening, tests/security run in parallel and gate the launch checklist (§18).
+
+### 29.1 Status legend for Part II
+`[ ]` not started · `[~]` in progress · `[x]` done & verified. These boxes — not §17's — are the source of truth for production readiness going forward.

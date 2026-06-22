@@ -6,9 +6,15 @@ import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LoreHub",
-  description: "Phase 0 scaffold for the Lore-native collaboration platform.",
+  title: {
+    default: "LoreHub — collaboration for Lore repositories",
+    template: "%s · LoreHub",
+  },
+  description:
+    "LoreHub is the self-hostable collaboration platform for Lore, Epic's binary-first version control system. Repositories, change requests, CI/CD, and game-asset tooling in one place.",
 };
+
+const themeInit = `(function(){try{var t=localStorage.getItem('lorehub-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -16,7 +22,10 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body>
         <SiteHeader />
         {children}

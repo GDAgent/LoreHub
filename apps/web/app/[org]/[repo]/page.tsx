@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-import { demoRevisions } from "@/lib/demo-repository";
+import { RepoTabs } from "@/components/repo-tabs";
+import { RichText } from "@/lib/render-rich-text";
+import {
+  demoBranches,
+  demoRevisions,
+  formatBytes,
+  getDemoNode,
+  listTreeEntries,
+} from "@/lib/demo-repository";
 
 type RepositoryPageProps = {
   params: Promise<{
@@ -9,103 +17,128 @@ type RepositoryPageProps = {
   }>;
 };
 
-const sections = [
-  { label: "Code", href: (org: string, repo: string) => `/${org}/${repo}/tree/${demoRevisions[0].hash}` },
-  { label: "Revisions", href: (org: string, repo: string) => `/${org}/${repo}/revisions` },
-  { label: "Branches", href: (org: string, repo: string) => `/${org}/${repo}/branches` },
-  { label: "Issues", href: (org: string, repo: string) => `/${org}/${repo}/issues` },
-  { label: "CRs", href: (org: string, repo: string) => `/${org}/${repo}/cr` },
-  { label: "Pipelines", href: (org: string, repo: string) => `/${org}/${repo}/pipelines` },
-  { label: "Assets", href: (org: string, repo: string) => `/${org}/${repo}/assets` },
-  { label: "Locks", href: (org: string, repo: string) => `/${org}/${repo}/locks` },
-  { label: "Analytics", href: (org: string, repo: string) => `/${org}/${repo}/analytics` },
-  { label: "Obliterate", href: (org: string, repo: string) => `/${org}/${repo}/obliterate` },
-  {
-    label: "Diff",
-    href: (org: string, repo: string) => `/${org}/${repo}/diff/7c91ae447bc2/f34ab29ce810`,
-  },
-  { label: "Settings", href: (org: string, repo: string) => `/${org}/${repo}/settings` },
-  { label: "Push", href: (org: string, repo: string) => `/${org}/${repo}/push` },
-];
-
 export default async function RepositoryPage({ params }: RepositoryPageProps) {
   const { org, repo } = await params;
+  const head = demoRevisions[0];
+  const entries = listTreeEntries(head.hash, "");
+  const readmeNode = getDemoNode(head.hash, "README.md");
+  const readme = readmeNode?.kind === "text" ? readmeNode.content : null;
+  const defaultBranch = demoBranches.find((branch) => branch.isDefault) ?? demoBranches[0];
 
   return (
     <main className="shell page">
-      <section className="panel">
+      <section>
         <div className="repo-title">
           <div>
-            <div className="repo-path">{org} / {repo}</div>
-            <h1>{repo}</h1>
-            <p className="muted">
-              Repository home for the collaboration, game-dev, and CI shell. Phase 4 adds pipeline-as-code, runner details,
-              WebSocket logs, Lore-backed artifact partitions, and CR merge gates.
+            <div className="repo-path">
+              <Link href={`/${org}`}>{org}</Link> / <strong>{repo}</strong>{" "}
+              <span className="pill">Public</span>
+            </div>
+            <p className="muted top-gap-sm" style={{ maxWidth: "70ch" }}>
+              Binary-first sample project for validating revision browsing, asset review, change
+              requests, and CI on top of Lore.
             </p>
           </div>
-          <Link className="button" href={`/${org}/${repo}/tree/${demoRevisions[0].hash}`}>
-            Open latest snapshot
-          </Link>
-        </div>
-        <div className="route-strip">
-          {sections.map((section) => (
-            <Link key={section.label} href={section.href(org, repo)}>
-              {section.label}
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid two">
-        <article className="panel">
-          <h2>Phase 4 CI/CD surface</h2>
-          <ul className="list">
-            <li>Pipelines now expose YAML config, runner metadata, logs, and artifact partitions.</li>
-            <li>The API streams live demo job logs over WebSocket for the active run.</li>
-            <li>Change requests now show merge gates driven by approvals and CI state.</li>
-          </ul>
-        </article>
-        <article className="panel">
-          <h2>Next backend milestones</h2>
-          <ul className="list">
-            <li>Persist pipeline definitions, runs, and logs in the API and metadata store.</li>
-            <li>Execute real sparse Lore checkouts in the worker runner instead of demo traces.</li>
-            <li>Attach environment deployment approvals and cache metrics to run detail views.</li>
-          </ul>
-        </article>
-      </section>
-
-      <section className="grid three top-gap">
-        <article className="panel">
-          <h2>Organization</h2>
-          <div className="stack-links">
-            <Link href={`/${org}/settings`}>Org settings</Link>
-            <Link href={`/${org}/teams`}>Teams</Link>
-            <Link href={`/${org}/notifications`}>Notifications</Link>
+          <div className="meta-row">
+            <button className="button-secondary" type="button">★ Star</button>
+            <button className="button-secondary" type="button">Watch</button>
+            <Link className="button" href={`/${org}/${repo}/push`}>Clone / Push</Link>
           </div>
-        </article>
-        <article className="panel">
-          <h2>Open issue</h2>
-          <p className="muted">Issue #12 tracks the active HUD regression blocking art capture sign-off.</p>
-          <Link className="button-secondary" href={`/${org}/${repo}/issues/12`}>
-            Open issue #12
-          </Link>
-        </article>
-        <article className="panel">
-          <h2>Active asset</h2>
-          <p className="muted">The hero corridor albedo now has a dedicated metadata page and binary diff view.</p>
-          <Link className="button-secondary" href={`/${org}/${repo}/assets/hero-corridor-albedo`}>
-            Open asset detail
-          </Link>
-        </article>
-        <article className="panel">
-          <h2>Active pipeline</h2>
-          <p className="muted">Run `run-107` is streaming logs for the art review build and currently gates merge on !7.</p>
-          <Link className="button-secondary" href={`/${org}/${repo}/pipelines/run-107`}>
-            Open pipeline run
-          </Link>
-        </article>
+        </div>
+        <RepoTabs org={org} repo={repo} active="code" />
       </section>
+
+      <div className="grid" style={{ gridTemplateColumns: "minmax(0, 2.4fr) minmax(0, 1fr)", alignItems: "start" }}>
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <div className="panel" style={{ padding: 0 }}>
+            <div className="meta-row" style={{ justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-muted)" }}>
+              <span className="meta-row">
+                <span className="avatar-button" style={{ width: 24, height: 24, fontSize: "0.7rem" }} aria-hidden="true">M</span>
+                <strong>{head.author}</strong>
+                <span className="muted">{head.title}</span>
+              </span>
+              <Link className="muted" href={`/${org}/${repo}/revisions/${head.hash}`} style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
+                {head.shortHash}
+              </Link>
+            </div>
+            <div className="entry-table" style={{ border: "none", borderRadius: 0 }}>
+              {entries.map((entry) => (
+                <div key={entry.path} className="entry-row">
+                  <span className="entry-name">
+                    <Link href={
+                      entry.kind === "directory"
+                        ? `/${org}/${repo}/tree/${head.hash}/${entry.path}`
+                        : `/${org}/${repo}/tree/${head.hash}/${entry.path}`
+                    }>
+                      {entry.kind === "directory" ? "📁 " : entry.kind === "binary" ? "📦 " : "📄 "}
+                      {entry.name}
+                    </Link>
+                  </span>
+                  <span className="entry-kind">{entry.kind}</span>
+                  <span className="entry-meta">{entry.size ? formatBytes(entry.size) : "—"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {readme ? (
+            <div className="panel">
+              <div className="meta-row" style={{ justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                <strong>README.md</strong>
+              </div>
+              <div className="section-divider" />
+              <RichText org={org} repo={repo} text={readme} />
+            </div>
+          ) : null}
+        </div>
+
+        <aside style={{ display: "grid", gap: "1rem" }}>
+          <div className="panel">
+            <h3>About</h3>
+            <p className="muted" style={{ fontSize: "0.9rem" }}>
+              Binary-first sample repository on Lore. Browse code, review assets, and run pipelines.
+            </p>
+            <div className="metadata-list top-gap-sm">
+              <div className="metadata-row">
+                <span className="muted">Default branch</span>
+                <span className="pill">{defaultBranch.name}</span>
+              </div>
+              <div className="metadata-row">
+                <span className="muted">Branches</span>
+                <Link href={`/${org}/${repo}/branches`}>{demoBranches.length}</Link>
+              </div>
+              <div className="metadata-row">
+                <span className="muted">Revisions</span>
+                <Link href={`/${org}/${repo}/revisions`}>{demoRevisions.length}</Link>
+              </div>
+            </div>
+          </div>
+
+          <div className="panel">
+            <h3>Storage</h3>
+            <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
+              Lore deduplicates fragments across revisions and repositories.
+            </p>
+            <div className="stat top-gap-sm">
+              <strong className="highlight-cell">62% saved</strong>
+              <span className="muted">3.6 GB logical → 1.4 GB stored</span>
+            </div>
+            <Link className="button-secondary top-gap-sm" href={`/${org}/${repo}/analytics`} style={{ width: "100%" }}>
+              View analytics
+            </Link>
+          </div>
+
+          <div className="panel">
+            <h3>Activity</h3>
+            <div className="stack-links top-gap-sm">
+              <Link href={`/${org}/${repo}/issues`}>Open issues</Link>
+              <Link href={`/${org}/${repo}/cr`}>Change requests</Link>
+              <Link href={`/${org}/${repo}/pipelines`}>Recent pipelines</Link>
+              <Link href={`/${org}/${repo}/assets`}>Asset browser</Link>
+            </div>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }
