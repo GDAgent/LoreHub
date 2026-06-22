@@ -1145,10 +1145,10 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [ ] OpenAPI spec generated/maintained; typed client for the frontend.
 
 ### 24.3 Auth & authz
-- [ ] Real **username/password** (argon2/bcrypt), session cookies + CSRF, **API tokens** (scoped, expiring).
+- [~] Real **username/password** (Argon2id), session cookies, **API tokens** schema. *(Done: `hash_password`/`verify_password`, opaque session tokens hashed at rest, `register`/`login`/`logout`/`me` endpoints, HttpOnly SameSite=Lax cookie, `CurrentUser` extractor, `api_tokens` table + unit tests. TODO: CSRF tokens, API-token issuance/auth endpoints, rotation.)*
 - [ ] **OAuth2** (GitHub/Google/GitLab) social login.
-- [ ] Role-based authorization enforced server-side (Owner/Maintainer/Developer/Reporter/Guest) at org and repo scope.
-- [ ] Short-lived **Lore-scoped JWT** minting per §16 once Lore transport exists.
+- [ ] Role-based authorization enforced server-side (Owner/Maintainer/Developer/Reporter/Guest) at org and repo scope. *(Schema in place via org_members/repo_collaborators; enforcement middleware TODO.)*
+- [x] Short-lived **Lore-scoped JWT** minting per §16 (`TokenIssuer::issue_repository_token`, partition-scoped, 60s–15m TTL, unit-tested) — pre-existing, wired to the repositories route.
 
 ### 24.4 Lore integration (`packages/lore-client`)
 - [ ] Define the transport seam (gRPC wire and/or `lore-capi` FFI) behind a stable trait.
