@@ -1117,7 +1117,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] **Issues list + detail**: filter bar (open/closed counts), colored labels, state icons, clean rows, collapsible new-issue form; detail is two-column (conversation + assignees/labels/milestone sidebar). *(Bulk actions still TODO.)*
 - [x] **Change Requests list + detail**: filter bar (open/draft/merged), review timeline, **merge box** with pipeline + approval gates, reviewers/labels/linked-issues/revisions sidebar, inline threads, draft state. *(Conflict/diverged banners still TODO.)*
 - [x] **Pipelines list + run detail**: status rows with job pills, run detail with job status timeline, live log streaming UI, artifacts table, runner/sparse/partition sidebar. *(Stage DAG + re-run/cancel still TODO.)*
-- [ ] **Assets browser + asset detail**: grid/list, type filters, image/audio/3D/video preview, metadata, dedup/"find duplicates".
+- [~] **Assets browser**: responsive grid, type-filter pills, previews, dedup ("% chunks shared") on each card, diff entry. *(Asset detail page + cross-repo "find duplicates" still TODO.)*
+- [x] **Branches** (list rows, default/new badges, new-branch form, new-CR action) and **Revisions** (commit rows with diff stats + sticky revision-graph sidebar) rebuilt with the repo tab bar.
 - [ ] **Locks, Obliteration, Analytics**: production-grade dashboards with clear destructive affordances.
 - [ ] **Settings** (repo/org/user): tabbed forms with validation, danger zones.
 - [ ] **Admin + Enterprise** (auth/SSO, directory/LDAP, audit, SLA, cloud billing): real dashboard layouts.
