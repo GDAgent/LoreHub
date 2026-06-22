@@ -1151,10 +1151,10 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] Short-lived **Lore-scoped JWT** minting per §16 (`TokenIssuer::issue_repository_token`, partition-scoped, 60s–15m TTL, unit-tested) — pre-existing, wired to the repositories route.
 
 ### 24.4 Lore integration (`packages/lore-client`)
-- [ ] Define the transport seam (gRPC wire and/or `lore-capi` FFI) behind a stable trait.
-- [ ] Implement: partition provisioning, list/read revisions, browse tree, fetch blob, branch list/create, diff, locks, links, obliteration two-phase, metadata read/write.
+- [x] Define the transport seam behind a stable trait: `LoreBackend` (async-trait, `Send + Sync`, dyn-compatible) with provisioning + read methods and serde-able data types (`LoreRevision`, `LoreBranch`, `LoreTreeEntry`, `LoreBlob`).
+- [~] Implement the operations. *(Done: partition provisioning (real seam), list revisions/branches, browse tree, read blob via the trait. TODO on the real `LoreClient`: wire gRPC/`lore-capi` for the read methods, plus diff, locks, links, obliteration two-phase, metadata read/write.)*
 - [ ] Pin and document the exact Lore server version; integration tests against a real `lore-server` in Compose.
-- [ ] Until a real Lore server is available, ship a **conformance-tested fake** implementing the same trait so the rest of the stack is real.
+- [x] Ship a **conformance-tested fake** (`FakeLoreBackend`) implementing the same trait with deterministic arena data; shared `assert_conformance` suite runs against it and is ready to re-run against a real server.
 
 ### 24.5 Worker & CI
 - [ ] Real task queue (Redis-backed) with retry/timeout/idempotency.

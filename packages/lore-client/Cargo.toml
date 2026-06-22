@@ -5,6 +5,8 @@ edition.workspace = true
 license = "MIT"
 
 [dependencies]
+async-trait.workspace = true
+serde.workspace = true
 uuid.workspace = true
 
 [dev-dependencies]
