@@ -1103,7 +1103,7 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] Real **global top bar**: brand, global search trigger, notifications bell, user avatar menu with dropdown. *(Create (+) menu still TODO.)*
 - [x] **Command palette** (⌘K) for jump-to repo/issue/CR, actions, and navigation (`components/command-palette.tsx`).
 - [x] Reusable repo **tab bar** with active state (`components/repo-tabs.tsx`); top tabs on repo pages. *(Contextual left nav on deep pages still TODO.)*
-- [ ] Consistent breadcrumbs: `org / repo / section / item`.
+- [~] Consistent breadcrumbs: linked `org / repo` path + repo tab bar on every repo page, and `root / dir / file` breadcrumbs in the code tree. *(Section/item breadcrumb on deep detail pages still TODO.)*
 - [ ] Real user/org/repo switching.
 
 ### 23.4 Page-by-page rebuild (visual + interaction)
