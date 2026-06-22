@@ -1113,10 +1113,10 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] **Repo home**: README render, About sidebar (visibility, storage-savings widget, branches/revisions), file list, clone/push entry. *(Branch/revision picker + languages bar still TODO.)*
 - [ ] **Code tree + file viewer**: breadcrumb path, syntax highlight, blame-style metadata, binary/asset preview routing, raw/download, copy-permalink.
 - [ ] **Revisions list + revision detail**: rich rows, **revision DAG** redesigned (legible, zoom/pan, hover cards).
-- [ ] **Diff viewer**: unified + split, file tree of changed paths, inline comment affordance, binary/image/audio/3D diff surfaces.
+- [x] **Diff viewer**: GitHub-style file cards with per-file +/- diff stats, totals header, unified default + collapsible side-by-side. *(Changed-file tree nav + inline comment affordance still TODO.)*
 - [x] **Issues list + detail**: filter bar (open/closed counts), colored labels, state icons, clean rows, collapsible new-issue form; detail is two-column (conversation + assignees/labels/milestone sidebar). *(Bulk actions still TODO.)*
 - [x] **Change Requests list + detail**: filter bar (open/draft/merged), review timeline, **merge box** with pipeline + approval gates, reviewers/labels/linked-issues/revisions sidebar, inline threads, draft state. *(Conflict/diverged banners still TODO.)*
-- [ ] **Pipelines list + run detail**: stage/job DAG, live log streaming UI, artifacts, re-run/cancel.
+- [x] **Pipelines list + run detail**: status rows with job pills, run detail with job status timeline, live log streaming UI, artifacts table, runner/sparse/partition sidebar. *(Stage DAG + re-run/cancel still TODO.)*
 - [ ] **Assets browser + asset detail**: grid/list, type filters, image/audio/3D/video preview, metadata, dedup/"find duplicates".
 - [ ] **Locks, Obliteration, Analytics**: production-grade dashboards with clear destructive affordances.
 - [ ] **Settings** (repo/org/user): tabbed forms with validation, danger zones.

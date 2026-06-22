@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { Fragment } from "react";
 
 import { PipelineLogStream } from "@/components/pipeline-log-stream";
+import { RepoTabs } from "@/components/repo-tabs";
 import { getPipelineRun } from "@/lib/demo-pipelines";
+import { formatDateTime } from "@/lib/format";
 
 type PipelineRunPageProps = {
   params: Promise<{
@@ -23,84 +25,99 @@ export default async function PipelineRunPage({ params }: PipelineRunPageProps) 
 
   return (
     <main className="shell page">
-      <section className="panel">
-        <div className="section-header">
-          <div>
-            <div className="repo-path">{org} / {repo}</div>
-            <h1>{run.id} {run.title}</h1>
-          </div>
-          <span className={`pill ${run.status === "passed" ? "success-pill" : run.status === "running" ? "accent-pill" : "warn-pill"}`}>
-            {run.status}
-          </span>
+      <section>
+        <div className="repo-path">
+          <Link href={`/${org}`}>{org}</Link> / <Link href={`/${org}/${repo}`}><strong>{repo}</strong></Link>
         </div>
-        <div className="meta-row muted">
-          <span>{run.branch}</span>
-          <span>{run.revision}</span>
-          <span>{run.runnerName}</span>
-        </div>
-        <div className="cta-row compact">
-          <Link className="button-secondary" href={`/${org}/${repo}/pipelines`}>
-            All pipeline runs
-          </Link>
-          <Link className="button-secondary" href={`/${org}/${repo}/cr/${run.changeRequestNumber ?? 7}`}>
-            Linked change request
-          </Link>
-        </div>
+        <RepoTabs org={org} repo={repo} active="pipelines" />
       </section>
 
-      <section className="grid two top-gap">
-        <article className="panel">
-          <h2>Runner</h2>
-          <ul className="list">
-            <li>Runner: {run.runnerName}</li>
-            <li>Sparse checkout: {run.sparsePaths.join(", ")}</li>
-            <li>Artifact partition: {run.artifactPartition}</li>
-            <li>Triggered by: {run.triggeredBy}</li>
-          </ul>
-          <div className="top-gap">
-            <h2>Jobs</h2>
+      <header>
+        <div className="meta-row" style={{ marginBottom: "0.4rem" }}>
+          <Link className="muted" href={`/${org}/${repo}/pipelines`}>← All runs</Link>
+        </div>
+        <div className="repo-title">
+          <div>
+            <h1 style={{ marginBottom: "0.4rem" }}>{run.title} <span className="muted" style={{ fontWeight: 400 }}>{run.id}</span></h1>
+            <div className="meta-row muted">
+              <span className={`pill ${run.status === "passed" ? "success-pill" : run.status === "failed" ? "warn-pill" : ""}`}>{run.status}</span>
+              <span><code>{run.branch}</code> @ <code>{run.revision.slice(0, 7)}</code></span>
+              <span>· started {formatDateTime(run.startedAt)}</span>
+            </div>
+          </div>
+          {run.changeRequestNumber ? (
+            <Link className="button-secondary" href={`/${org}/${repo}/cr/${run.changeRequestNumber}`}>
+              Linked CR !{run.changeRequestNumber}
+            </Link>
+          ) : null}
+        </div>
+      </header>
+
+      <div className="detail-grid">
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <article className="panel">
+            <h3>Jobs</h3>
             <div className="pipeline-jobs top-gap-sm">
               {run.jobs.map((job) => (
-                <article key={job.name} className="comment-card">
-                  <div className="section-header">
+                <div key={job.name} className="merge-status" style={{ border: "1px solid var(--border-muted)", borderRadius: "var(--radius)", marginBottom: "0.5rem" }}>
+                  <span className={`merge-dot ${job.status === "passed" ? "ok" : job.status === "failed" ? "fail" : job.status === "running" ? "warn" : "muted"}`} />
+                  <div style={{ flex: 1 }}>
                     <strong>{job.name}</strong>
-                    <span className={`pill ${job.status === "passed" ? "success-pill" : job.status === "running" ? "accent-pill" : job.status === "failed" ? "warn-pill" : "muted-pill"}`}>
-                      {job.status}
-                    </span>
+                    <div className="muted" style={{ fontSize: "0.82rem" }}>{job.stage} · {job.duration}</div>
                   </div>
-                  <div className="meta-row muted">
-                    <span>{job.stage}</span>
-                    <span>{job.duration}</span>
-                  </div>
-                </article>
+                  <span className={`job-pill ${job.status}`}>{job.status}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel">
+            <h3>Live log stream</h3>
+            <PipelineLogStream runId={run.id} initialLines={run.initialLogLines} />
+          </article>
+
+          <article className="panel">
+            <h3>Artifacts stored in Lore</h3>
+            <div className="table-grid artifact-table top-gap-sm">
+              <div className="table-header">Artifact</div>
+              <div className="table-header">Path</div>
+              <div className="table-header">Size</div>
+              <div className="table-header">Partition</div>
+              {run.artifacts.map((artifact) => (
+                <Fragment key={artifact.name}>
+                  <div className="table-cell strong-cell">{artifact.name}</div>
+                  <div className="table-cell"><code style={{ fontSize: "0.8rem" }}>{artifact.path}</code></div>
+                  <div className="table-cell">{artifact.size}</div>
+                  <div className="table-cell"><code style={{ fontSize: "0.8rem" }}>{artifact.partitionLabel}</code></div>
+                </Fragment>
+              ))}
+            </div>
+          </article>
+        </div>
+
+        <aside>
+          <div className="sidebar-block">
+            <h4>Runner</h4>
+            <span>{run.runnerName}</span>
+          </div>
+          <div className="sidebar-block">
+            <h4>Triggered by</h4>
+            <span>{run.triggeredBy} · {run.source.replace("_", " ")}</span>
+          </div>
+          <div className="sidebar-block">
+            <h4>Sparse checkout</h4>
+            <div className="stack-links">
+              {run.sparsePaths.map((path) => (
+                <code key={path} style={{ fontSize: "0.8rem" }}>{path}</code>
               ))}
             </div>
           </div>
-        </article>
-
-        <article className="panel">
-          <h2>Live log stream</h2>
-          <PipelineLogStream runId={run.id} initialLines={run.initialLogLines} />
-        </article>
-      </section>
-
-      <section className="panel top-gap">
-        <h2>Artifacts stored in Lore</h2>
-        <div className="table-grid artifact-table top-gap-sm">
-          <div className="table-header">Artifact</div>
-          <div className="table-header">Path</div>
-          <div className="table-header">Size</div>
-          <div className="table-header">Partition</div>
-          {run.artifacts.map((artifact) => (
-            <Fragment key={artifact.name}>
-              <div className="table-cell strong-cell">{artifact.name}</div>
-              <div className="table-cell">{artifact.path}</div>
-              <div className="table-cell">{artifact.size}</div>
-              <div className="table-cell">{artifact.partitionLabel}</div>
-            </Fragment>
-          ))}
-        </div>
-      </section>
+          <div className="sidebar-block">
+            <h4>Artifact partition</h4>
+            <code style={{ fontSize: "0.8rem" }}>{run.artifactPartition}</code>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }
