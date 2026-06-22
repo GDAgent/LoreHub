@@ -1,6 +1,7 @@
--- Seed data mirroring the frontend demo modules so the UI keeps working
--- against a real database during the demo -> live migration.
--- Idempotent: safe to run on an already-seeded database.
+-- DEV-ONLY sample data. NOT a migration — never auto-applied. Run manually
+-- against a development database to populate example content:
+--   psql "$DATABASE_URL" -f scripts/seed.sql
+-- Idempotent: safe to run repeatedly. Do not run against production.
 
 -- Users -----------------------------------------------------------------
 INSERT INTO users (id, email, username, display_name, title, avatar_initials) VALUES
@@ -86,6 +87,11 @@ ON CONFLICT (repo_id, number) DO NOTHING;
 
 INSERT INTO cr_reviewers (cr_id, user_id) VALUES
     ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO cr_labels (cr_id, label_id) VALUES
+    ('c8000001-0000-0000-0000-000000000001', '1ab00001-0000-0000-0000-000000000002'),
+    ('c8000001-0000-0000-0000-000000000001', '1ab00001-0000-0000-0000-000000000004')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO cr_reviews (cr_id, reviewer_id, state, body) VALUES

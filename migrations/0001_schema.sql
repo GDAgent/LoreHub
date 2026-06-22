@@ -1,22 +1,26 @@
--- Workstream B: collaboration & auth schema.
--- Extends the initial users/organizations/repositories core with the entities
--- backing issues, change requests, membership, locks, and notifications.
+-- LoreHub schema (single clean baseline — pre-release, no back-compat).
+-- Core: users, organizations, repositories.
+-- Collaboration: membership, issues, change requests, branches, locks, notifications.
+
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- ---------------------------------------------------------------------------
--- Auth: usernames, password credentials, sessions, API tokens
+-- Identity & auth
 -- ---------------------------------------------------------------------------
 
-ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS title TEXT;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_initials TEXT;
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE NOT NULL,
+    username TEXT UNIQUE NOT NULL,
+    display_name TEXT NOT NULL,
+    title TEXT,
+    avatar_initials TEXT,
+    password_hash TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-UPDATE users SET username = split_part(email, '@', 1) WHERE username IS NULL;
-
-ALTER TABLE users ALTER COLUMN username SET NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS users_username_key ON users(username);
-
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     token_hash TEXT NOT NULL UNIQUE,
@@ -24,10 +28,9 @@ CREATE TABLE IF NOT EXISTS sessions (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL
 );
+CREATE INDEX sessions_user_id_idx ON sessions(user_id);
 
-CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
-
-CREATE TABLE IF NOT EXISTS api_tokens (
+CREATE TABLE api_tokens (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -37,14 +40,48 @@ CREATE TABLE IF NOT EXISTS api_tokens (
     last_used_at TIMESTAMPTZ,
     expires_at TIMESTAMPTZ
 );
-
-CREATE INDEX IF NOT EXISTS api_tokens_user_id_idx ON api_tokens(user_id);
+CREATE INDEX api_tokens_user_id_idx ON api_tokens(user_id);
 
 -- ---------------------------------------------------------------------------
--- Membership: org members, teams, repo collaborators
+-- Organizations & repositories
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS org_members (
+CREATE TABLE organizations (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    display_name TEXT NOT NULL,
+    plan TEXT NOT NULL DEFAULT 'free',
+    lore_partition BYTEA,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT organizations_plan_check CHECK (plan IN ('free', 'team', 'business', 'enterprise')),
+    CONSTRAINT organizations_partition_length_check CHECK (
+        lore_partition IS NULL OR octet_length(lore_partition) = 16
+    )
+);
+
+CREATE TABLE repositories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    org_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    description TEXT,
+    visibility TEXT NOT NULL DEFAULT 'private',
+    lore_partition_id BYTEA NOT NULL,
+    default_branch TEXT NOT NULL DEFAULT 'main',
+    archived BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CONSTRAINT repositories_visibility_check CHECK (visibility IN ('public', 'internal', 'private')),
+    CONSTRAINT repositories_partition_length_check CHECK (octet_length(lore_partition_id) = 16),
+    UNIQUE (org_id, name)
+);
+CREATE INDEX repositories_org_id_idx ON repositories(org_id);
+CREATE INDEX repositories_created_at_idx ON repositories(created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Membership
+-- ---------------------------------------------------------------------------
+
+CREATE TABLE org_members (
     org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role TEXT NOT NULL DEFAULT 'Developer',
@@ -53,7 +90,7 @@ CREATE TABLE IF NOT EXISTS org_members (
     CONSTRAINT org_members_role_check CHECK (role IN ('Owner', 'Maintainer', 'Developer', 'Reporter', 'Guest'))
 );
 
-CREATE TABLE IF NOT EXISTS teams (
+CREATE TABLE teams (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     slug TEXT NOT NULL,
@@ -63,13 +100,13 @@ CREATE TABLE IF NOT EXISTS teams (
     UNIQUE (org_id, slug)
 );
 
-CREATE TABLE IF NOT EXISTS team_members (
+CREATE TABLE team_members (
     team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (team_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS repo_collaborators (
+CREATE TABLE repo_collaborators (
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role TEXT NOT NULL DEFAULT 'Developer',
@@ -82,7 +119,7 @@ CREATE TABLE IF NOT EXISTS repo_collaborators (
 -- Issues
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS labels (
+CREATE TABLE labels (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -91,7 +128,7 @@ CREATE TABLE IF NOT EXISTS labels (
     UNIQUE (repo_id, name)
 );
 
-CREATE TABLE IF NOT EXISTS milestones (
+CREATE TABLE milestones (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -100,7 +137,7 @@ CREATE TABLE IF NOT EXISTS milestones (
     CONSTRAINT milestones_state_check CHECK (state IN ('open', 'closed'))
 );
 
-CREATE TABLE IF NOT EXISTS issues (
+CREATE TABLE issues (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     number INTEGER NOT NULL,
@@ -115,36 +152,34 @@ CREATE TABLE IF NOT EXISTS issues (
     UNIQUE (repo_id, number),
     CONSTRAINT issues_state_check CHECK (state IN ('open', 'closed'))
 );
+CREATE INDEX issues_repo_state_idx ON issues(repo_id, state);
 
-CREATE INDEX IF NOT EXISTS issues_repo_state_idx ON issues(repo_id, state);
-
-CREATE TABLE IF NOT EXISTS issue_labels (
+CREATE TABLE issue_labels (
     issue_id UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
     label_id UUID NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
     PRIMARY KEY (issue_id, label_id)
 );
 
-CREATE TABLE IF NOT EXISTS issue_assignees (
+CREATE TABLE issue_assignees (
     issue_id UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (issue_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS issue_comments (
+CREATE TABLE issue_comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     issue_id UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
     author_id UUID REFERENCES users(id) ON DELETE SET NULL,
     body TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-
-CREATE INDEX IF NOT EXISTS issue_comments_issue_idx ON issue_comments(issue_id, created_at);
+CREATE INDEX issue_comments_issue_idx ON issue_comments(issue_id, created_at);
 
 -- ---------------------------------------------------------------------------
 -- Change requests
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS change_requests (
+CREATE TABLE change_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     number INTEGER NOT NULL,
@@ -163,16 +198,21 @@ CREATE TABLE IF NOT EXISTS change_requests (
     UNIQUE (repo_id, number),
     CONSTRAINT change_requests_state_check CHECK (state IN ('draft', 'open', 'merged', 'closed'))
 );
+CREATE INDEX change_requests_repo_state_idx ON change_requests(repo_id, state);
 
-CREATE INDEX IF NOT EXISTS change_requests_repo_state_idx ON change_requests(repo_id, state);
+CREATE TABLE cr_labels (
+    cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
+    label_id UUID NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
+    PRIMARY KEY (cr_id, label_id)
+);
 
-CREATE TABLE IF NOT EXISTS cr_reviewers (
+CREATE TABLE cr_reviewers (
     cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (cr_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS cr_reviews (
+CREATE TABLE cr_reviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
     reviewer_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -182,7 +222,7 @@ CREATE TABLE IF NOT EXISTS cr_reviews (
     CONSTRAINT cr_reviews_state_check CHECK (state IN ('approved', 'commented', 'requested'))
 );
 
-CREATE TABLE IF NOT EXISTS cr_comments (
+CREATE TABLE cr_comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
     author_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -194,7 +234,7 @@ CREATE TABLE IF NOT EXISTS cr_comments (
 -- Branches & locks
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS branches (
+CREATE TABLE branches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -204,7 +244,7 @@ CREATE TABLE IF NOT EXISTS branches (
     UNIQUE (repo_id, name)
 );
 
-CREATE TABLE IF NOT EXISTS locks (
+CREATE TABLE locks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     repo_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
     path TEXT NOT NULL,
@@ -220,7 +260,7 @@ CREATE TABLE IF NOT EXISTS locks (
 -- Notifications
 -- ---------------------------------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS notifications (
+CREATE TABLE notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     kind TEXT NOT NULL,
@@ -233,5 +273,4 @@ CREATE TABLE IF NOT EXISTS notifications (
     CONSTRAINT notifications_kind_check CHECK (kind IN ('mention', 'issue', 'review', 'team', 'permission')),
     CONSTRAINT notifications_email_status_check CHECK (email_status IN ('sent', 'queued'))
 );
-
-CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications(user_id, created_at DESC);
+CREATE INDEX notifications_user_idx ON notifications(user_id, created_at DESC);
