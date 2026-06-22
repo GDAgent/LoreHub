@@ -801,6 +801,19 @@ table.table tbody tr:hover { background: var(--surface-hover); }
 
 .danger-row:first-of-type { border-top: none; }
 
+.step-badge {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
 .filter-search {
   display: flex;
   gap: 0.6rem;

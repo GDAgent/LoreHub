@@ -1111,8 +1111,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [ ] **Dashboard** (logged-in): activity feed, your repos, assigned issues/CRs.
 - [x] **Explore**: searchable/filterable repo discovery cards (search form, topic filter pills, repo cards with stars/storage/updated, empty state).
 - [x] **Repo home**: README render, About sidebar (visibility, storage-savings widget, branches/revisions), file list, clone/push entry. *(Branch/revision picker + languages bar still TODO.)*
-- [ ] **Code tree + file viewer**: breadcrumb path, syntax highlight, blame-style metadata, binary/asset preview routing, raw/download, copy-permalink.
-- [ ] **Revisions list + revision detail**: rich rows, **revision DAG** redesigned (legible, zoom/pan, hover cards).
+- [x] **Code tree + file viewer**: repo tab bar, breadcrumb path, folder/file icons in a tree table, syntax-highlighted file view with header actions (copy/raw), and binary nodes routed to the asset browser; push page rebuilt with numbered steps + notes sidebar. *(Blame view + working download still TODO.)*
+- [x] **Revisions list + revision detail**: rich commit rows with diff stats + sticky **revision DAG** sidebar; revision detail with changed-files table, details/parents sidebar, and browse/diff actions. *(DAG zoom/pan + hover cards still TODO.)*
 - [x] **Diff viewer**: GitHub-style file cards with per-file +/- diff stats, totals header, unified default + collapsible side-by-side. *(Changed-file tree nav + inline comment affordance still TODO.)*
 - [x] **Issues list + detail**: filter bar (open/closed counts), colored labels, state icons, clean rows, collapsible new-issue form; detail is two-column (conversation + assignees/labels/milestone sidebar). *(Bulk actions still TODO.)*
 - [x] **Change Requests list + detail**: filter bar (open/draft/merged), review timeline, **merge box** with pipeline + approval gates, reviewers/labels/linked-issues/revisions sidebar, inline threads, draft state. *(Conflict/diverged banners still TODO.)*
