@@ -464,6 +464,31 @@ code, pre, kbd, samp {
 
 .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+table.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+table.table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+table.table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-muted);
+  vertical-align: middle;
+}
+
+table.table tbody tr:last-child td { border-bottom: none; }
+table.table tbody tr:hover { background: var(--surface-hover); }
 
 /* ---------- Panels / cards ---------- */
 
@@ -525,6 +550,19 @@ code, pre, kbd, samp {
 .button-secondary:focus-visible {
   background: var(--surface-hover);
   border-color: var(--border-strong);
+  text-decoration: none;
+}
+
+.button-danger {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  color: var(--danger);
+}
+
+.button-danger:hover,
+.button-danger:focus-visible {
+  background: var(--danger-soft);
+  border-color: var(--danger);
   text-decoration: none;
 }
 
@@ -1317,6 +1355,7 @@ code, pre, kbd, samp {
 }
 
 .state-open { color: var(--success); }
+.state-danger { color: var(--danger); }
 .state-closed { color: var(--done); }
 .state-merged { color: var(--done); }
 .state-draft { color: var(--muted); }
@@ -1436,6 +1475,7 @@ code, pre, kbd, samp {
 @media (max-width: 1000px) {
   .header-search { display: none; }
   .nav-links { display: none; }
+  .grid.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
@@ -1446,6 +1486,7 @@ code, pre, kbd, samp {
   .hero-grid,
   .grid.two,
   .grid.three,
+  .grid.four,
   .stats,
   .asset-grid,
   .diff-layout,
