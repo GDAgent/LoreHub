@@ -782,6 +782,25 @@ table.table tbody tr:hover { background: var(--surface-hover); }
   font-size: 0.9rem;
 }
 
+.list-row.unread-row {
+  background: color-mix(in srgb, var(--brand-soft) 55%, var(--surface));
+}
+
+.danger-zone {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+.danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--border-muted);
+}
+
+.danger-row:first-of-type { border-top: none; }
+
 .filter-search {
   display: flex;
   gap: 0.6rem;

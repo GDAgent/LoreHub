@@ -1120,7 +1120,7 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] **Assets browser + detail + binary diff**: responsive grid, type-filter pills, previews, dedup ("% chunks shared") on each card; asset detail with preview, metadata, chunk-profile bar, and action sidebar; binary-diff page with stat cards, per-type visual diff, and type-specific delta table. *(Cross-repo "find duplicates" still TODO.)*
 - [x] **Branches** (list rows, default/new badges, new-branch form, new-CR action) and **Revisions** (commit rows with diff stats + sticky revision-graph sidebar) rebuilt with the repo tab bar.
 - [x] **Locks, Obliteration, Analytics**: locks list with lock/unlock affordances + empty state; obliteration requests with status pills and a destructive new-request flow; storage analytics with stat cards, tier-breakdown bars, store composition, and per-asset chunk table. *(All rebuilt on the repo tab bar.)*
-- [ ] **Settings** (repo/org/user): tabbed forms with validation, danger zones.
+- [x] **Settings** (repo/org) + **Teams** + **Notifications**: repo settings with general form, branch protection, access/role tables, and a danger zone; org settings with section nav, profile form, members table, policies; teams as list rows with a popover create form; notifications with filter pills, unread styling, and list rows. *(User settings page + real validation land with Workstream B.)*
 - [ ] **Admin + Enterprise** (auth/SSO, directory/LDAP, audit, SLA, cloud billing): real dashboard layouts.
 - [x] **Auth pages**: centered branded login/register/SSO cards with required-field hints, SSO provider buttons, and a divider. *(Real client-side validation/error states land with Workstream B auth.)*
 
