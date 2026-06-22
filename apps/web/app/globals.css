@@ -1272,6 +1272,152 @@ code, pre, kbd, samp {
 .palette-item-group { grid-area: group; align-self: center; color: var(--faint); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .palette-empty { padding: 1.5rem; text-align: center; color: var(--muted); }
 
+/* ---------- Labels ---------- */
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+:root[data-theme="dark"] .label,
+.label { /* dark handled inline-safe: keep readable border */ }
+
+/* ---------- List rows (issues / CRs) ---------- */
+
+.list-rows {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.list-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.list-row:last-child { border-bottom: none; }
+.list-row:hover { background: var(--surface-hover); }
+
+.list-row-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  display: inline-grid;
+  place-items: center;
+}
+
+.state-open { color: var(--success); }
+.state-closed { color: var(--done); }
+.state-merged { color: var(--done); }
+.state-draft { color: var(--muted); }
+
+.list-row-main { flex: 1; min-width: 0; }
+
+.list-row-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.list-row-title a { color: var(--text-strong); }
+.list-row-title a:hover { color: var(--brand); }
+
+.list-row-meta {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+}
+
+.list-row-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+/* Filter bar with counts (Open / Closed) */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--canvas-inset);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.filter-bar + .list-rows {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.filter-bar a { color: var(--muted); }
+.filter-bar a:hover { color: var(--text); text-decoration: none; }
+.filter-bar a.active { color: var(--text-strong); }
+
+/* Two-column detail layout */
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .detail-grid { grid-template-columns: 1fr; }
+}
+
+.sidebar-block {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.sidebar-block:last-child { border-bottom: none; }
+.sidebar-block h4 { margin: 0; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Merge box */
+.merge-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.merge-status {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.merge-status:last-child { border-bottom: none; }
+
+.merge-dot { width: 12px; height: 12px; border-radius: 999px; flex-shrink: 0; }
+.merge-dot.ok { background: var(--success); }
+.merge-dot.warn { background: var(--warning); }
+.merge-dot.fail { background: var(--danger); }
+.merge-dot.muted { background: var(--faint); }
+
+.merge-actions { padding: 1rem; background: var(--canvas-inset); }
+
 /* ---------- Empty states ---------- */
 
 .empty-state {

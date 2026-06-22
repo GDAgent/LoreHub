@@ -1114,8 +1114,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [ ] **Code tree + file viewer**: breadcrumb path, syntax highlight, blame-style metadata, binary/asset preview routing, raw/download, copy-permalink.
 - [ ] **Revisions list + revision detail**: rich rows, **revision DAG** redesigned (legible, zoom/pan, hover cards).
 - [ ] **Diff viewer**: unified + split, file tree of changed paths, inline comment affordance, binary/image/audio/3D diff surfaces.
-- [ ] **Issues list + detail**: filters, labels, milestones, assignees, bulk actions, threaded comments, timeline events.
-- [ ] **Change Requests list + detail**: review UI, approvals, CI status checks panel, conflict/diverged banners, merge box with rules, draft state.
+- [x] **Issues list + detail**: filter bar (open/closed counts), colored labels, state icons, clean rows, collapsible new-issue form; detail is two-column (conversation + assignees/labels/milestone sidebar). *(Bulk actions still TODO.)*
+- [x] **Change Requests list + detail**: filter bar (open/draft/merged), review timeline, **merge box** with pipeline + approval gates, reviewers/labels/linked-issues/revisions sidebar, inline threads, draft state. *(Conflict/diverged banners still TODO.)*
 - [ ] **Pipelines list + run detail**: stage/job DAG, live log streaming UI, artifacts, re-run/cancel.
 - [ ] **Assets browser + asset detail**: grid/list, type filters, image/audio/3D/video preview, metadata, dedup/"find duplicates".
 - [ ] **Locks, Obliteration, Analytics**: production-grade dashboards with clear destructive affordances.

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { RepoTabs } from "@/components/repo-tabs";
 import { applyChangeRequestActions, getChangeRequest, getUser } from "@/lib/demo-collaboration";
 import { getPipelineGate } from "@/lib/demo-pipelines";
+import { formatDateTime, labelStyle } from "@/lib/format";
 import { RichText } from "@/lib/render-rich-text";
 import { getSearchParamValue } from "@/lib/search-params";
 
@@ -14,6 +16,14 @@ type ChangeRequestDetailPageProps = {
   }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function Avatar({ name }: { name: string }) {
+  return (
+    <span className="avatar-button" style={{ width: 28, height: 28, fontSize: "0.72rem" }} aria-hidden="true">
+      {name.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
 
 export default async function ChangeRequestDetailPage({ params, searchParams }: ChangeRequestDetailPageProps) {
   const { org, repo, number } = await params;
@@ -40,140 +50,210 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
     : preMergeView;
   const author = getUser(view.author);
   const approvals = view.reviews.filter((review) => review.state === "approved").length;
+  const stateLabel = view.state === "merged" ? "Merged" : view.state === "draft" ? "Draft" : "Open";
+  const crBase = `/${org}/${repo}/cr/${view.number}`;
 
   return (
     <main className="shell page">
-      <section className="panel">
-        <div className="section-header">
-          <div>
-            <div className="repo-path">{org} / {repo}</div>
-            <h1>!{view.number} {view.title}</h1>
-          </div>
-          <span className={`pill ${view.state === "merged" ? "success-pill" : view.state === "draft" ? "muted-pill" : "accent-pill"}`}>
-            {view.state}
-          </span>
+      <section>
+        <div className="repo-path">
+          <Link href={`/${org}`}>{org}</Link> / <Link href={`/${org}/${repo}`}><strong>{repo}</strong></Link>
         </div>
-        <div className="meta-row muted">
-          <span>{author?.name ?? view.author}</span>
-          <span>{view.sourceBranch} {"->"} {view.targetBranch}</span>
-          <span>{approvals} approvals</span>
-        </div>
-        <RichText org={org} repo={repo} text={view.body} />
-        <div className="cta-row compact">
-          <Link className="button-secondary" href={`/${org}/${repo}/cr/${view.number}?review=approve`}>
-            Approve
-          </Link>
-          {gate.canMerge ? (
-            <Link className="button-secondary" href={`/${org}/${repo}/cr/${view.number}?review=merge`}>
-              Merge
-            </Link>
-          ) : (
-            <span className="button-secondary button-disabled">Merge blocked</span>
-          )}
-          <Link className="button-secondary" href={`/${org}/${repo}/diff/${view.baseRevision}/${view.headRevision}`}>
-            Open diff
-          </Link>
-        </div>
-        <div className="panel gate-panel top-gap">
-          <h2>CI status gate</h2>
-          <ul className="list">
-            <li>Approvals: {approvals} / {gate.approvalsRequired}</li>
-            <li>Pipeline: {gate.run ? `${gate.run.id} (${gate.run.status})` : "No pipeline run linked"}</li>
-            <li>Merge allowed: {gate.canMerge ? "yes" : "no"}</li>
-          </ul>
-          {gate.run ? (
-            <Link className="button-secondary top-gap-sm" href={`/${org}/${repo}/pipelines/${gate.run.id}`}>
-              Open pipeline run
-            </Link>
-          ) : null}
-          {mergeBlocked ? <p className="error-text top-gap-sm">Merge is blocked until the pipeline is green and approvals reach the branch protection threshold.</p> : null}
-        </div>
+        <RepoTabs org={org} repo={repo} active="cr" />
       </section>
 
-      <section className="grid two">
-        <article className="panel">
-          <h2>Review summary</h2>
-          <div className="comment-thread">
-            {view.reviews.map((review, index) => (
-              <article key={`${review.reviewer}-${index}`} className="comment-card">
-                <div className="meta-row muted">
-                  <span>{getUser(review.reviewer)?.name ?? review.reviewer}</span>
-                  <span>{review.state}</span>
-                  <span>{review.createdAt.replace("T", " ").replace("Z", " UTC")}</span>
-                </div>
-                <RichText org={org} repo={repo} text={review.body} />
-              </article>
-            ))}
+      <header>
+        <h1 style={{ marginBottom: "0.5rem" }}>
+          {view.title} <span className="muted" style={{ fontWeight: 400 }}>!{view.number}</span>
+        </h1>
+        <div className="meta-row">
+          <span className={`pill ${view.state === "merged" ? "success-pill" : ""}`} style={view.state === "merged" ? { color: "var(--done)" } : {}}>
+            {stateLabel}
+          </span>
+          <span className="muted">
+            <strong>{author?.name ?? view.author}</strong> wants to merge{" "}
+            <code>{view.sourceBranch}</code> into <code>{view.targetBranch}</code>
+          </span>
+        </div>
+      </header>
+
+      <div className="detail-grid">
+        <div style={{ display: "grid", gap: "1rem" }}>
+          <article className="comment-card">
+            <div className="meta-row">
+              <Avatar name={author?.name ?? view.author} />
+              <strong>{author?.name ?? view.author}</strong>
+              <span className="muted">opened on {formatDateTime(view.createdAt)}</span>
+            </div>
+            <RichText org={org} repo={repo} text={view.body} />
+          </article>
+
+          {/* Conversation: reviews + comments */}
+          {view.reviews.map((review, index) => (
+            <article key={`${review.reviewer}-${index}`} className="comment-card">
+              <div className="meta-row">
+                <Avatar name={getUser(review.reviewer)?.name ?? review.reviewer} />
+                <strong>{getUser(review.reviewer)?.name ?? review.reviewer}</strong>
+                <span className={`pill ${review.state === "approved" ? "success-pill" : ""}`}>{review.state}</span>
+                <span className="muted">{formatDateTime(review.createdAt)}</span>
+              </div>
+              <RichText org={org} repo={repo} text={review.body} />
+            </article>
+          ))}
+
+          {view.comments.map((comment) => (
+            <article key={comment.id} className="comment-card">
+              <div className="meta-row">
+                <Avatar name={getUser(comment.author)?.name ?? comment.author} />
+                <strong>{getUser(comment.author)?.name ?? comment.author}</strong>
+                <span className="muted">{formatDateTime(comment.createdAt)}</span>
+              </div>
+              <RichText org={org} repo={repo} text={comment.body} />
+            </article>
+          ))}
+
+          {/* Inline review threads */}
+          {view.inlineThreads.length > 0 ? (
+            <article className="panel">
+              <h3>Inline review threads</h3>
+              <div className="thread-list top-gap-sm">
+                {view.inlineThreads.map((thread) => (
+                  <div key={thread.id} className="thread-card">
+                    <div className="meta-row">
+                      <code style={{ fontSize: "0.8rem" }}>{thread.filePath}:{thread.line}</code>
+                      <span className={`pill ${thread.status === "resolved" ? "success-pill" : ""}`}>{thread.status}</span>
+                    </div>
+                    {thread.comments.map((comment) => (
+                      <div key={comment.id} style={{ padding: "0 1rem 0.75rem" }}>
+                        <div className="meta-row muted" style={{ fontSize: "0.82rem" }}>
+                          <span>{getUser(comment.author)?.name ?? comment.author}</span>
+                          <span>{formatDateTime(comment.createdAt)}</span>
+                        </div>
+                        <RichText org={org} repo={repo} text={comment.body} />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : null}
+
+          {/* Merge box */}
+          <div className="merge-box">
+            <div className="merge-status">
+              <span className={`merge-dot ${gate.run ? (gate.run.status === "passed" ? "ok" : gate.run.status === "failed" ? "fail" : "warn") : "muted"}`} />
+              <div style={{ flex: 1 }}>
+                <strong>
+                  {gate.run ? `Pipeline ${gate.run.id}` : "No pipeline linked"}
+                  {gate.run ? ` — ${gate.run.status}` : ""}
+                </strong>
+                {gate.run ? (
+                  <div className="muted" style={{ fontSize: "0.85rem" }}>
+                    <Link href={`/${org}/${repo}/pipelines/${gate.run.id}`}>View run details</Link>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className="merge-status">
+              <span className={`merge-dot ${approvals >= gate.approvalsRequired ? "ok" : "warn"}`} />
+              <div style={{ flex: 1 }}>
+                <strong>Review approvals</strong>
+                <div className="muted" style={{ fontSize: "0.85rem" }}>{approvals} of {gate.approvalsRequired} required approvals</div>
+              </div>
+            </div>
+            <div className="merge-actions">
+              {view.state === "merged" ? (
+                <p className="success-text" style={{ margin: 0 }}>✓ This change request was merged.</p>
+              ) : (
+                <>
+                  <div className="meta-row">
+                    <Link className="button-secondary" href={`${crBase}?review=approve`}>Approve</Link>
+                    <Link className="button-secondary" href={`/${org}/${repo}/diff/${view.baseRevision}/${view.headRevision}`}>View diff</Link>
+                    {gate.canMerge ? (
+                      <Link className="button" href={`${crBase}?review=merge`}>Merge change request</Link>
+                    ) : (
+                      <span className="button button-disabled">Merge blocked</span>
+                    )}
+                  </div>
+                  {mergeBlocked || !gate.canMerge ? (
+                    <p className="muted top-gap-sm" style={{ margin: "0.5rem 0 0", fontSize: "0.85rem" }}>
+                      Merging requires a green pipeline and {gate.approvalsRequired} approval(s) per branch protection.
+                    </p>
+                  ) : null}
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="top-gap">
-            <h2>General discussion</h2>
-            <div className="comment-thread">
-              {view.comments.map((comment) => (
-                <article key={comment.id} className="comment-card">
-                  <div className="meta-row muted">
-                    <span>{getUser(comment.author)?.name ?? comment.author}</span>
-                    <span>{comment.createdAt.replace("T", " ").replace("Z", " UTC")}</span>
-                  </div>
-                  <RichText org={org} repo={repo} text={comment.body} />
-                </article>
+          {/* Comment + inline forms */}
+          <article className="panel">
+            <h3>Add a review comment</h3>
+            <form className="form-grid" method="get">
+              <div className="field">
+                <textarea name="commentBody" placeholder="Summarize the review and reference follow-up issues like #14." rows={4} />
+              </div>
+              <div className="meta-row" style={{ justifyContent: "flex-end" }}>
+                <button className="button" type="submit">Comment</button>
+              </div>
+            </form>
+            <div className="section-divider top-gap" />
+            <h3 className="top-gap-sm">Comment on a specific line</h3>
+            <form className="form-grid" method="get">
+              <div className="split-fields">
+                <div className="field">
+                  <label htmlFor="inlinePath">File path</label>
+                  <input id="inlinePath" name="inlinePath" defaultValue="Source/LoreHub/HUD.cpp" type="text" />
+                </div>
+                <div className="field">
+                  <label htmlFor="inlineLine">Line</label>
+                  <input id="inlineLine" name="inlineLine" defaultValue="4" type="text" />
+                </div>
+              </div>
+              <div className="field">
+                <textarea name="inlineComment" placeholder="Comment directly on the diff with @mentions or cross-references." rows={3} />
+              </div>
+              <div className="meta-row" style={{ justifyContent: "flex-end" }}>
+                <button className="button-secondary" type="submit">Add inline comment</button>
+              </div>
+            </form>
+          </article>
+        </div>
+
+        <aside>
+          <div className="sidebar-block">
+            <h4>Reviewers</h4>
+            {view.reviewers.length === 0 ? <span className="muted">None requested</span> : view.reviewers.map((reviewer) => (
+              <div key={reviewer} className="meta-row">
+                <Avatar name={getUser(reviewer)?.name ?? reviewer} />
+                <span>{getUser(reviewer)?.name ?? reviewer}</span>
+              </div>
+            ))}
+          </div>
+          <div className="sidebar-block">
+            <h4>Labels</h4>
+            <div className="meta-row">
+              {view.labels.length === 0 ? <span className="muted">None</span> : view.labels.map((label) => (
+                <span key={label} className="label" style={labelStyle(label)}>{label}</span>
               ))}
             </div>
           </div>
-        </article>
-
-        <article className="panel form-card">
-          <h2>Inline threads</h2>
-          <div className="thread-list">
-            {view.inlineThreads.map((thread) => (
-              <article key={thread.id} className="thread-card">
-                <div className="meta-row">
-                  <span className="pill muted-pill">{thread.filePath}</span>
-                  <span className="pill muted-pill">Line {thread.line}</span>
-                  <span className={`pill ${thread.status === "resolved" ? "success-pill" : "accent-pill"}`}>{thread.status}</span>
-                </div>
-                {thread.comments.map((comment) => (
-                  <div key={comment.id} className="top-gap-sm">
-                    <div className="meta-row muted">
-                      <span>{getUser(comment.author)?.name ?? comment.author}</span>
-                      <span>{comment.createdAt.replace("T", " ").replace("Z", " UTC")}</span>
-                    </div>
-                    <RichText org={org} repo={repo} text={comment.body} />
-                  </div>
-                ))}
-              </article>
-            ))}
+          <div className="sidebar-block">
+            <h4>Linked issues</h4>
+            <div className="stack-links">
+              {view.linkedIssues.length === 0 ? <span className="muted">None</span> : view.linkedIssues.map((issueNumber) => (
+                <Link key={issueNumber} href={`/${org}/${repo}/issues/${issueNumber}`}>#{issueNumber}</Link>
+              ))}
+            </div>
           </div>
-          <form className="form-grid top-gap" method="get">
-            <div className="field">
-              <label htmlFor="commentBody">Review comment</label>
-              <textarea id="commentBody" name="commentBody" placeholder="Summarize the review result and reference any follow-up issues." rows={4} />
+          <div className="sidebar-block">
+            <h4>Revisions</h4>
+            <div className="muted" style={{ fontSize: "0.82rem", fontFamily: "var(--font-mono)" }}>
+              base {view.baseRevision.slice(0, 7)}<br />head {view.headRevision.slice(0, 7)}
+              {view.mergeRevision ? <><br />merge {view.mergeRevision.slice(0, 7)}</> : null}
             </div>
-            <button className="button-secondary" type="submit">
-              Post review comment
-            </button>
-          </form>
-          <form className="form-grid top-gap" method="get">
-            <div className="field split-fields">
-              <div>
-                <label htmlFor="inlinePath">File path</label>
-                <input id="inlinePath" name="inlinePath" defaultValue="Source/LoreHub/HUD.cpp" type="text" />
-              </div>
-              <div>
-                <label htmlFor="inlineLine">Line</label>
-                <input id="inlineLine" name="inlineLine" defaultValue="4" type="text" />
-              </div>
-            </div>
-            <div className="field">
-              <label htmlFor="inlineComment">Inline comment</label>
-              <textarea id="inlineComment" name="inlineComment" placeholder="Comment directly on the diff with @mentions or cross-references." rows={4} />
-            </div>
-            <button className="button" type="submit">
-              Add inline comment
-            </button>
-          </form>
-        </article>
-      </section>
+          </div>
+        </aside>
+      </div>
     </main>
   );
 }
