@@ -6,34 +6,25 @@ LoreHub is to Lore what GitHub is to Git, with GitLab's self-hosting model baked
 
 ## Status
 
-🚧 **Implementation scaffold with Phases 0-5 completed in-repo.**
+🚧 **Pre-1.0, under active development.** The full stack runs end-to-end:
+PostgreSQL → Axum API → Next.js web, with a real `loreserver` integration seam.
 
-The repository now includes:
+**Real today** (DB-backed, verified end-to-end):
 
-- Rust workspace scaffolding for API, worker, shared DB types, and Lore integration seams
-- A Next.js application shell covering repository browsing, collaboration, game-dev, CI/CD, and enterprise/cloud admin surfaces
-- SQLx migrations and baseline repository CRUD flows
-- Community Edition Docker Compose deployment wiring
-- Enterprise and cloud deployment scaffolds including Helm, installer automation, and Terraform environment shapes
+- Argon2 password auth with sessions (register / login / logout / `me`)
+- Issues — list, detail, create — served from PostgreSQL
+- Read APIs for change requests, branches, locks, labels
+- Repository CRUD + partition-scoped Lore JWT minting
+- A clean single-baseline schema, applied automatically on API startup
+- `LoreBackend` trait with a conformance-tested fake and a real-server seam
 
-Important: many product surfaces are currently implemented as structured demo-backed shells. The UI, route layout, deployment paths, and integration seams are in place, but several features still need production-grade persistence and direct Lore-backed execution. See [`PLAN.md`](./PLAN.md) for the architecture, roadmap, launch checklist, and rollout details.
+**Still in progress** — most UI pages still read demo modules and are being wired
+to the API page by page; the real gRPC Lore read path, the Redis worker/CI, and
+the broader API surface are landing next. The exact punch list is in
+[`PLAN.md`](./PLAN.md) **§30 (Production Readiness Gap Audit)**.
 
-## Current Coverage
-
-Implemented in-repo today:
-
-- **Phase 0** foundation: workspace, migrations, API shell, worker shell, Compose stack
-- **Phase 1** VCS UI: tree browsing, revisions, branches, diff viewer, DAG, CLI push instructions
-- **Phase 2** collaboration: issues, change requests, notifications, teams, permissions
-- **Phase 3** game-dev features: asset browser, binary diff shells, locks, analytics, obliteration flows
-- **Phase 4** CI/CD: pipeline-as-code page flow, runner demo, artifact partition seams, WebSocket log streaming, CR gates
-- **Phase 5** enterprise/cloud: SSO pages, LDAP sync, audit log, Helm, installer, Terraform scaffolds, billing, SLA, responsive shell
-
-Still open:
-
-- production Lore transport and branch/revision execution
-- persistent collaboration and CI state beyond the demo-backed UI layer
-- Phase 6 polish, integrations, localization, and accessibility hardening
+👉 **New here? Start with [Getting started](./docs/getting-started.md)** — a
+verified, end-to-end local setup.
 
 ## Repo Layout
 
@@ -52,21 +43,21 @@ Still open:
 
 ## Documentation Map
 
-- [`PLAN.md`](./PLAN.md) — architecture, roadmap, launch checklist, and execution details
-- [`docs/development/local-dev.md`](./docs/development/local-dev.md) — local contributor workflow
-- [`docs/deployment/quick-start.md`](./docs/deployment/quick-start.md) — fastest local/self-hosted paths
-- [`docs/deployment/fly.md`](./docs/deployment/fly.md) — Fly.io deployment notes
-- [`docs/deployment/hetzner.md`](./docs/deployment/hetzner.md) — Hetzner deployment notes
-- [`docs/deployment/enterprise-operations.md`](./docs/deployment/enterprise-operations.md) — enterprise deployment and rollout notes
+- [`docs/getting-started.md`](./docs/getting-started.md) — **end-to-end local setup (start here)**
+- [`docs/user-guide.md`](./docs/user-guide.md) — using LoreHub (repos, issues, CRs, locks, push)
+- [`docs/reference/api.md`](./docs/reference/api.md) — HTTP API reference
+- [`docs/development/local-dev.md`](./docs/development/local-dev.md) — dev workflow, code map, conventions
+- [`docs/deployment/quick-start.md`](./docs/deployment/quick-start.md) — Compose / Helm / Terraform
+- [`docs/deployment/fly.md`](./docs/deployment/fly.md) · [`docs/deployment/hetzner.md`](./docs/deployment/hetzner.md) · [`docs/deployment/enterprise-operations.md`](./docs/deployment/enterprise-operations.md)
+- [`PLAN.md`](./PLAN.md) — architecture, roadmap, launch checklist, and the **§30 production gap audit**
 
 ## For Developers
 
 ### Tooling
 
 - Rust stable toolchain with `cargo`
-- Node.js 22+ and `npm`
-- Docker for the Compose path
-- Helm for Kubernetes-oriented deployment testing
+- Node.js 20+ and `npm`
+- PostgreSQL 16+ (local dev); Docker for the Compose path; Helm for Kubernetes
 
 ### Local Verification
 
@@ -85,38 +76,22 @@ npm run build:web
 
 ### Development Notes
 
-- The web app intentionally uses demo-backed data modules for many end-user workflows until direct Lore and DB-backed execution is wired end-to-end.
-- The API already owns migration startup, JWT minting, repository CRUD, and pipeline log WebSocket streaming.
-- The worker already includes a CI runner demo path to exercise sparse-checkout and artifact-partition flow shape.
-- If you are extending a completed phase, prefer tightening existing seams rather than adding parallel scaffolds.
+- Web pages fetch live data via `apps/web/lib/repo-data.ts`, falling back to
+  `demo-*.ts` modules when the API is unreachable. The demo modules and fallback
+  are dev scaffolding, removed page-by-page as flows are wired (`PLAN.md` §30.1).
+- The API owns migration startup, Argon2 auth + sessions, JWT minting, repository
+  CRUD, the issue/CR/branch/lock read APIs, and pipeline log WebSocket streaming.
+- Prefer tightening existing route/component seams over adding parallel scaffolds.
 
 ## Getting Started
 
-### Community Edition Compose
+See **[docs/getting-started.md](./docs/getting-started.md)** for the verified,
+end-to-end local setup (Postgres → API → web). For containers and clusters see
+the [deployment quick start](./docs/deployment/quick-start.md):
 
 ```bash
-cargo test --workspace
-npm install
-npm run build:web
+cp .env.example .env
 docker compose -f infra/compose/docker-compose.yml up --build
-```
-
-Set `LORE_SERVER_IMAGE` if you need to point Compose at a specific published Lore server image.
-
-### Installer
-
-```bash
-./scripts/install.sh --mode compose
-./scripts/install.sh --mode helm --namespace lorehub --domain lorehub.example.com
-```
-
-### Helm
-
-```bash
-helm upgrade --install lorehub ./infra/helm/lorehub \
-  --namespace lorehub \
-  --create-namespace \
-  --set ingress.host=lorehub.example.com
 ```
 
 ## For Deployers

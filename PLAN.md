@@ -1228,3 +1228,50 @@ This is the order that maximizes felt progress while de-risking the hard parts:
 
 ### 29.1 Status legend for Part II
 `[ ]` not started · `[~]` in progress · `[x]` done & verified. These boxes — not §17's — are the source of truth for production readiness going forward.
+
+---
+
+## 30. Production Readiness Gap Audit (2026-06-23)
+
+State of the world: the full stack runs and is verified live (Postgres → API → Next.js web; a real `loreserver` 0.8.4 builds & runs). Auth, issues (list/detail/create), and read endpoints for CRs/branches/locks/labels are real. **Everything below is what still stands between this and a no-demo, no-stub, enterprise-shippable product.** (Pre-release: no back-compat, no data migrations, no deprecated shims.)
+
+### 30.1 Frontend still demo-backed (wire to API, then delete `demo-*.ts`)
+Live today: issues list + detail. **Still reading `apps/web/lib/demo-*.ts` (27 pages):**
+- [ ] Repo home, code tree/file viewer, revisions list/detail, diff, branches — `demo-repository.ts`
+- [ ] Change requests list + detail (needs CR labels/reviews/approvals in API) — `demo-collaboration.ts`
+- [ ] Pipelines list + run detail — `demo-pipelines.ts`
+- [ ] Assets browser/detail, binary-diff, analytics, locks, obliterate — `demo-assets.ts`
+- [ ] Dashboard, org settings, teams, notifications — `demo-collaboration.ts`
+- [ ] Admin + enterprise (SSO, directory, audit, SLA, billing), SSO handoff — `demo-enterprise.ts`
+- [ ] **Then:** delete all `demo-*.ts` and the demo fallback in `lib/repo-data.ts` (fallback is dev-only scaffolding, not shippable).
+
+### 30.2 API endpoints still missing
+- [ ] Orgs/users/teams/members; repo create/settings/collaborators
+- [ ] CR detail (reviews, reviewers, comments, inline threads, approvals, merge gate); CR/issue/lock/branch **mutations** (currently issue create only)
+- [ ] Tree/blob/diff (Lore-backed); revisions list/detail
+- [ ] Pipelines (runs, jobs, artifacts) — replace the hardcoded WS demo log stream in `routes/pipelines.rs`
+- [ ] Assets + storage analytics (real dedup/chunk stats)
+- [ ] Notifications; obliteration request workflow
+- [ ] Enterprise: SSO/OIDC/SAML config, LDAP sync, audit log, SLA, billing (or gate behind EE + mark clearly)
+- [ ] Cross-cutting: pagination, filtering, rate limiting, request IDs, consistent error envelope, OpenAPI spec
+
+### 30.3 Stubs & demo cruft in the backend (remove or implement)
+- [ ] `packages/lore-client`: real `LoreClient` (`http`) read methods return empty stubs — implement via gRPC (`lore-proto`/tonic) against `loreserver`; keep `FakeLoreBackend` for tests only
+- [ ] Default `LORE_BACKEND=fake` → flip to `http` once gRPC lands; fake must not be the production default
+- [ ] `apps/worker`: `run_demo` with hardcoded `acme/demo`/`run-107` → real Redis-backed queue + CI runner picking up real pipeline rows
+- [ ] `routes/pipelines.rs`: `demo_lines()` hardcoded log stream → stream real runner logs
+
+### 30.4 Auth & authz hardening
+- [ ] CSRF protection for cookie-auth mutations; API-token issue/list/revoke endpoints + bearer auth
+- [ ] Server-side RBAC enforcement (org/repo roles) on every mutating route
+- [ ] OAuth2 social login (optional); short-lived Lore JWT minting wired to loreserver JWKS
+- [ ] Web: real session state, auth-gated routes, login/register POST to API (not GET-form previews)
+
+### 30.5 Infra, deploy, quality
+- [ ] CI for LoreHub (build/test/lint/typecheck/clippy + image publish)
+- [ ] Compose verified end-to-end incl. real loreserver profile; Helm/Terraform validated
+- [ ] Frontend tests (Vitest/RTL + Playwright e2e); Rust integration tests vs real loreserver
+- [ ] Security pass (secret handling, authz, dependency audit); a11y audit; perf budgets
+
+### 30.6 Short overview (what's left, in one breath)
+Real & done: design system + all pages (UI), DB schema, auth/sessions, issues end-to-end, Lore trait + fake, infra-that-boots. Left: **wire 27 pages to live data and delete demo modules+fallback**, **fill the missing API surface + mutations**, **implement the real gRPC Lore backend + Redis worker/CI (remove stubs)**, **harden authz/CSRF/tokens**, and **CI + tests + docs + deploy validation**.
