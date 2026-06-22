@@ -1135,12 +1135,12 @@ Goal: stop looking like a prototype; match the polish and information density of
 ## 24. Workstream B — Backend & Data (make it real)
 
 ### 24.1 Persistence
-- [ ] Finalize the full PostgreSQL schema from §13 + additions: sessions, api_tokens, oauth_identities, org_members, teams, team_members, repo_collaborators, roles/permissions, labels, milestones, issue/cr comments, reactions, reviews/approvals, notifications, webhooks, pipeline jobs/logs/artifacts, storage_stats, releases/tags.
-- [ ] Real **SQLx** queries (compile-time checked) for every entity; migrations runnable from a clean DB.
-- [ ] Seed/fixtures for local dev that mirror the current demo data so the UI keeps working during migration.
+- [~] Finalize the full PostgreSQL schema from §13 + additions. *(Done: `0002_collaboration.sql` adds sessions, api_tokens, org_members, teams, team_members, repo_collaborators, labels, milestones, issues + labels/assignees/comments, change_requests + reviewers/reviews/comments, branches, locks, notifications. Still TODO: oauth_identities, reactions, webhooks, pipeline jobs/logs/artifacts, storage_stats, releases/tags.)*
+- [~] Real **SQLx** queries for every entity; migrations runnable from a clean DB. *(Done: runtime-checked `query_as` for repositories + issues/CRs/branches/locks/labels. TODO: move to compile-time `query!` macros + full entity coverage.)*
+- [x] Seed/fixtures for local dev that mirror the current demo data so the UI keeps working during migration (`0003_seed.sql`: acme org, four users, demo repo, branches, labels, issues + comments, a CR, locks, notifications).
 
 ### 24.2 API surface
-- [ ] Implement the REST endpoints in §14 for real (repos, tree, blob, diff, branches, locks, links, issues, CRs, obliterate, analytics) + auth, orgs/teams/members, notifications, webhooks, search, pipelines.
+- [~] Implement the REST endpoints in §14 for real. *(Done: repositories CRUD + lore-token; read endpoints for issues (list/detail/create), change requests, branches, locks, labels under `/api/v1/orgs/{org}/repos/{repo}/…`; pipeline log WS. TODO: tree/blob/diff, obliterate, analytics, orgs/teams/members, notifications, webhooks, search.)*
 - [ ] Consistent error envelope, pagination, filtering, rate limiting, request IDs.
 - [ ] OpenAPI spec generated/maintained; typed client for the frontend.
 
