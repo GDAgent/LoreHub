@@ -11,7 +11,7 @@ type Command = {
 };
 
 const COMMANDS: Command[] = [
-  { label: "Dashboard", hint: "Your activity and repositories", href: "/", group: "Navigate" },
+  { label: "Dashboard", hint: "Your activity and repositories", href: "/dashboard", group: "Navigate" },
   { label: "Explore repositories", hint: "Discover public projects", href: "/explore", group: "Navigate" },
   { label: "Admin area", hint: "Server administration", href: "/admin", group: "Navigate" },
   { label: "Enterprise: Authentication", hint: "SSO / SAML / OIDC", href: "/admin/enterprise/auth", group: "Navigate" },

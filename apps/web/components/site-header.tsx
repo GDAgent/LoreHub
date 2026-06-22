@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { CommandPalette } from "@/components/command-palette";
 
 const navItems = [
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/explore", label: "Explore" },
   { href: "/acme/demo", label: "Repositories" },
   { href: "/acme/demo/pipelines", label: "Pipelines" },
@@ -92,6 +93,7 @@ export function SiteHeader() {
                   <strong>Rin Tanaka</strong>
                   <span className="muted">@rin</span>
                 </div>
+                <Link className="dropdown-item" href="/dashboard" role="menuitem">Dashboard</Link>
                 <Link className="dropdown-item" href="/acme/demo" role="menuitem">Your repositories</Link>
                 <Link className="dropdown-item" href="/acme/notifications" role="menuitem">Notifications</Link>
                 <Link className="dropdown-item" href="/acme/settings" role="menuitem">Settings</Link>

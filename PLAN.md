@@ -1108,7 +1108,7 @@ Goal: stop looking like a prototype; match the polish and information density of
 
 ### 23.4 Page-by-page rebuild (visual + interaction)
 - [x] **Marketing/home** (logged-out): credible product landing (hero, push snippet, feature grid, comparison) — replaced "Phase 0 scaffold" copy.
-- [ ] **Dashboard** (logged-in): activity feed, your repos, assigned issues/CRs.
+- [x] **Dashboard** (logged-in): `/dashboard` with greeting, stat cards, assigned issues, change requests needing you, recent activity feed, and a sidebar of your repositories + notifications; wired into header nav, user menu, and command palette.
 - [x] **Explore**: searchable/filterable repo discovery cards (search form, topic filter pills, repo cards with stars/storage/updated, empty state).
 - [x] **Repo home**: README render, About sidebar (visibility, storage-savings widget, branches/revisions), file list, clone/push entry. *(Branch/revision picker + languages bar still TODO.)*
 - [x] **Code tree + file viewer**: repo tab bar, breadcrumb path, folder/file icons in a tree table, syntax-highlighted file view with header actions (copy/raw), and binary nodes routed to the asset browser; push page rebuilt with numbered steps + notes sidebar. *(Blame view + working download still TODO.)*
