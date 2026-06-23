@@ -1240,9 +1240,10 @@ Live today: **collaboration vertical fully wired** — issues list/detail/create
 change requests list/detail/create/review/comment/inline-comment/merge all read & mutate the live
 API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts` is now live-only.
 **Still reading `apps/web/lib/demo-*.ts`:**
-- [ ] Repo home, code tree/file viewer, revisions list/detail, diff, branches — `demo-repository.ts`
-- [ ] Pipelines list + run detail — `demo-pipelines.ts`
-- [ ] Assets browser/detail, binary-diff, analytics, locks, obliterate — `demo-assets.ts` (locks/branches API ready in `repo-data.ts`)
+- [x] **Branches** + **locks** lists wired live (read-only; create/unlock are Lore writes → §30.3)
+- [ ] Repo home, code tree/file viewer, revisions list/detail, diff — `demo-repository.ts` (needs Lore gRPC §30.3)
+- [ ] Pipelines list + run detail — `demo-pipelines.ts` (needs runner §30.3)
+- [ ] Assets browser/detail, binary-diff, analytics, obliterate — `demo-assets.ts` (needs Lore gRPC §30.3)
 - [ ] Dashboard, org settings, teams, notifications — `demo-collaboration.ts`
 - [ ] Admin + enterprise (SSO, directory, audit, SLA, billing), SSO handoff — `demo-enterprise.ts`
 - [ ] **Then:** delete all `demo-*.ts` (collaboration pages no longer import `demo-collaboration` for CRs/issues; remaining importers: dashboard, notifications, settings, teams, obliterate).
