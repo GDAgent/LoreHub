@@ -1,9 +1,11 @@
 import Link from "next/link";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { buildCreatedChangeRequest, getUser, listChangeRequests } from "@/lib/demo-collaboration";
 import { formatDate, labelStyle } from "@/lib/format";
+import { getChangeRequests } from "@/lib/repo-data";
 import { getSearchParamValue } from "@/lib/search-params";
+
+import { createChangeRequestAction } from "./actions";
 
 type ChangeRequestsPageProps = {
   params: Promise<{
@@ -22,26 +24,21 @@ function stateMeta(state: string) {
 export default async function ChangeRequestsPage({ params, searchParams }: ChangeRequestsPageProps) {
   const { org, repo } = await params;
   const queryParams = await searchParams;
-  const query = getSearchParamValue(queryParams.q)?.trim();
+  const query = getSearchParamValue(queryParams.q)?.trim()?.toLowerCase();
   const state = getSearchParamValue(queryParams.state) ?? "open";
-  const title = getSearchParamValue(queryParams.title);
-  const body = getSearchParamValue(queryParams.body);
-  const sourceBranch = getSearchParamValue(queryParams.sourceBranch) ?? "feature/new-work";
-  const targetBranch = getSearchParamValue(queryParams.targetBranch) ?? "main";
+  const error = getSearchParamValue(queryParams.error);
 
-  const createdChangeRequest = title?.trim() && body?.trim()
-    ? buildCreatedChangeRequest({ title, body, sourceBranch, targetBranch })
-    : null;
-
-  const all = listChangeRequests({ query });
+  const all = (await getChangeRequests(org, repo)).filter((cr) =>
+    query ? `${cr.title} ${cr.labels.join(" ")}`.toLowerCase().includes(query) : true,
+  );
   const counts = {
     open: all.filter((cr) => cr.state === "open").length,
     draft: all.filter((cr) => cr.state === "draft").length,
     merged: all.filter((cr) => cr.state === "merged").length,
   };
-  const changeRequests = state === "all" ? all : all.filter((cr) => cr.state === state);
-  const visible = createdChangeRequest ? [createdChangeRequest, ...changeRequests] : changeRequests;
+  const visible = state === "all" ? all : all.filter((cr) => cr.state === state);
   const base = `/${org}/${repo}/cr`;
+  const createChangeRequest = createChangeRequestAction.bind(null, org, repo);
 
   return (
     <main className="shell page">
@@ -52,8 +49,8 @@ export default async function ChangeRequestsPage({ params, searchParams }: Chang
         <RepoTabs org={org} repo={repo} active="cr" />
       </section>
 
-      {createdChangeRequest ? (
-        <p className="success-text">✓ Opened !{createdChangeRequest.number}: {createdChangeRequest.title}</p>
+      {error ? (
+        <p className="error-text">Could not open change request: {error}</p>
       ) : null}
 
       <section style={{ display: "grid", gap: "0.75rem" }}>
@@ -67,7 +64,7 @@ export default async function ChangeRequestsPage({ params, searchParams }: Chang
             <summary className="button" style={{ listStyle: "none" }}>New change request</summary>
             <div className="panel" style={{ position: "absolute", right: "1.5rem", zIndex: 20, width: "min(460px, 90vw)", marginTop: "0.5rem", boxShadow: "var(--shadow-md)" }}>
               <h3>Open change request</h3>
-              <form className="form-grid" method="get">
+              <form className="form-grid" action={createChangeRequest}>
                 <div className="field">
                   <label htmlFor="title">Title</label>
                   <input id="title" name="title" placeholder="Promote checkpoint HUD refinements" type="text" required />
@@ -103,8 +100,6 @@ export default async function ChangeRequestsPage({ params, searchParams }: Chang
           ) : (
             <div className="list-rows">
               {visible.map((cr) => {
-                const author = getUser(cr.author);
-                const approvals = cr.reviews.filter((r) => r.state === "approved").length;
                 const meta = stateMeta(cr.state);
                 return (
                   <div key={cr.number} className="list-row">
@@ -118,9 +113,9 @@ export default async function ChangeRequestsPage({ params, searchParams }: Chang
                       </div>
                       <div className="list-row-meta">
                         <span>!{cr.number}</span>
-                        <span>{author?.name ?? cr.author} wants to merge <code style={{ fontSize: "0.8em" }}>{cr.sourceBranch}</code> → <code style={{ fontSize: "0.8em" }}>{cr.targetBranch}</code></span>
+                        <span>{cr.author} wants to merge <code style={{ fontSize: "0.8em" }}>{cr.sourceBranch}</code> → <code style={{ fontSize: "0.8em" }}>{cr.targetBranch}</code></span>
                         <span>· opened {formatDate(cr.createdAt)}</span>
-                        {approvals > 0 ? <span>· ✓ {approvals} approved</span> : null}
+                        {cr.approvals > 0 ? <span>· ✓ {cr.approvals} approved</span> : null}
                       </div>
                     </div>
                   </div>

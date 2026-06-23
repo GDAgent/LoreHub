@@ -41,11 +41,15 @@ cargo test --workspace && cargo clippy --workspace && npm run build:web
 
 ## Frontend data layer
 
-Pages fetch live data through `apps/web/lib/repo-data.ts`, which calls the typed
-client in `apps/web/lib/api.ts` and **falls back to the `demo-*.ts` modules** when
-the API is unreachable. The demo modules and the fallback are development
-scaffolding — as each page is wired to the API, its demo source is removed (see
-`PLAN.md` §30.1).
+`apps/web/lib/repo-data.ts` is the **live-only** data access layer; it calls the
+typed client in `apps/web/lib/api.ts` and returns empty/`null` (an honest empty
+state) when the API is down — no demo fallback. Mutations go through Next.js
+**server actions** (e.g. `app/[org]/[repo]/issues/actions.ts`,
+`.../cr/[number]/actions.ts`) that POST/PATCH to the API.
+
+The collaboration pages (issues + change requests) are fully wired this way. The
+remaining pages still import `demo-*.ts`; each is migrated to `repo-data.ts`
+page-by-page, after which the demo module is deleted (see `PLAN.md` §30.1).
 
 ## Database changes
 

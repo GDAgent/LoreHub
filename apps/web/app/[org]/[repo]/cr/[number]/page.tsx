@@ -2,11 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { applyChangeRequestActions, getChangeRequest, getUser } from "@/lib/demo-collaboration";
-import { getPipelineGate } from "@/lib/demo-pipelines";
 import { formatDateTime, labelStyle } from "@/lib/format";
 import { RichText } from "@/lib/render-rich-text";
+import { getChangeRequestDetail } from "@/lib/repo-data";
 import { getSearchParamValue } from "@/lib/search-params";
+
+import {
+  approveChangeRequestAction,
+  commentChangeRequestAction,
+  inlineCommentChangeRequestAction,
+  mergeChangeRequestAction,
+} from "./actions";
 
 type ChangeRequestDetailPageProps = {
   params: Promise<{
@@ -27,31 +33,25 @@ function Avatar({ name }: { name: string }) {
 
 export default async function ChangeRequestDetailPage({ params, searchParams }: ChangeRequestDetailPageProps) {
   const { org, repo, number } = await params;
-  const queryParams = await searchParams;
-  const changeRequest = getChangeRequest(Number(number));
+  const crNumber = Number(number);
+  const view = await getChangeRequestDetail(org, repo, crNumber);
 
-  if (!changeRequest) {
+  if (!view) {
     notFound();
   }
 
-  const requestedReview = getSearchParamValue(queryParams.review);
-  const preMergeView = applyChangeRequestActions(changeRequest, {
-    review: requestedReview === "approve" ? "approve" : undefined,
-    commentBody: getSearchParamValue(queryParams.commentBody),
-    inlineComment: getSearchParamValue(queryParams.inlineComment),
-    inlinePath: getSearchParamValue(queryParams.inlinePath),
-    inlineLine: getSearchParamValue(queryParams.inlineLine),
-  });
-  const preMergeApprovals = preMergeView.reviews.filter((review) => review.state === "approved").length;
-  const gate = getPipelineGate(changeRequest.number, preMergeApprovals);
-  const mergeBlocked = requestedReview === "merge" && !gate.canMerge;
-  const view = requestedReview === "merge" && gate.canMerge
-    ? applyChangeRequestActions(changeRequest, { review: "merge" })
-    : preMergeView;
-  const author = getUser(view.author);
-  const approvals = view.reviews.filter((review) => review.state === "approved").length;
+  const queryParams = await searchParams;
+  const error = getSearchParamValue(queryParams.error);
+
   const stateLabel = view.state === "merged" ? "Merged" : view.state === "draft" ? "Draft" : "Open";
+  const approvalsMet = view.approvals >= view.requiredApprovals;
+  const canMerge = view.state !== "merged" && approvalsMet;
   const crBase = `/${org}/${repo}/cr/${view.number}`;
+
+  const approve = approveChangeRequestAction.bind(null, org, repo, crNumber);
+  const merge = mergeChangeRequestAction.bind(null, org, repo, crNumber);
+  const comment = commentChangeRequestAction.bind(null, org, repo, crNumber);
+  const inlineComment = inlineCommentChangeRequestAction.bind(null, org, repo, crNumber);
 
   return (
     <main className="shell page">
@@ -71,18 +71,20 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
             {stateLabel}
           </span>
           <span className="muted">
-            <strong>{author?.name ?? view.author}</strong> wants to merge{" "}
+            <strong>{view.author}</strong> wants to merge{" "}
             <code>{view.sourceBranch}</code> into <code>{view.targetBranch}</code>
           </span>
         </div>
       </header>
 
+      {error ? <p className="error-text">{error}</p> : null}
+
       <div className="detail-grid">
         <div style={{ display: "grid", gap: "1rem" }}>
           <article className="comment-card">
             <div className="meta-row">
-              <Avatar name={author?.name ?? view.author} />
-              <strong>{author?.name ?? view.author}</strong>
+              <Avatar name={view.author} />
+              <strong>{view.author}</strong>
               <span className="muted">opened on {formatDateTime(view.createdAt)}</span>
             </div>
             <RichText org={org} repo={repo} text={view.body} />
@@ -92,20 +94,20 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
           {view.reviews.map((review, index) => (
             <article key={`${review.reviewer}-${index}`} className="comment-card">
               <div className="meta-row">
-                <Avatar name={getUser(review.reviewer)?.name ?? review.reviewer} />
-                <strong>{getUser(review.reviewer)?.name ?? review.reviewer}</strong>
+                <Avatar name={review.reviewer} />
+                <strong>{review.reviewer}</strong>
                 <span className={`pill ${review.state === "approved" ? "success-pill" : ""}`}>{review.state}</span>
                 <span className="muted">{formatDateTime(review.createdAt)}</span>
               </div>
-              <RichText org={org} repo={repo} text={review.body} />
+              {review.body ? <RichText org={org} repo={repo} text={review.body} /> : null}
             </article>
           ))}
 
-          {view.comments.map((comment) => (
-            <article key={comment.id} className="comment-card">
+          {view.comments.map((comment, index) => (
+            <article key={`comment-${index}`} className="comment-card">
               <div className="meta-row">
-                <Avatar name={getUser(comment.author)?.name ?? comment.author} />
-                <strong>{getUser(comment.author)?.name ?? comment.author}</strong>
+                <Avatar name={comment.author} />
+                <strong>{comment.author}</strong>
                 <span className="muted">{formatDateTime(comment.createdAt)}</span>
               </div>
               <RichText org={org} repo={repo} text={comment.body} />
@@ -117,16 +119,16 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
             <article className="panel">
               <h3>Inline review threads</h3>
               <div className="thread-list top-gap-sm">
-                {view.inlineThreads.map((thread) => (
-                  <div key={thread.id} className="thread-card">
+                {view.inlineThreads.map((thread, threadIndex) => (
+                  <div key={`${thread.filePath}-${thread.line}-${threadIndex}`} className="thread-card">
                     <div className="meta-row">
                       <code style={{ fontSize: "0.8rem" }}>{thread.filePath}:{thread.line}</code>
-                      <span className={`pill ${thread.status === "resolved" ? "success-pill" : ""}`}>{thread.status}</span>
+                      <span className={`pill ${thread.resolved ? "success-pill" : ""}`}>{thread.resolved ? "resolved" : "open"}</span>
                     </div>
-                    {thread.comments.map((comment) => (
-                      <div key={comment.id} style={{ padding: "0 1rem 0.75rem" }}>
+                    {thread.comments.map((comment, commentIndex) => (
+                      <div key={commentIndex} style={{ padding: "0 1rem 0.75rem" }}>
                         <div className="meta-row muted" style={{ fontSize: "0.82rem" }}>
-                          <span>{getUser(comment.author)?.name ?? comment.author}</span>
+                          <span>{comment.author}</span>
                           <span>{formatDateTime(comment.createdAt)}</span>
                         </div>
                         <RichText org={org} repo={repo} text={comment.body} />
@@ -141,43 +143,37 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
           {/* Merge box */}
           <div className="merge-box">
             <div className="merge-status">
-              <span className={`merge-dot ${gate.run ? (gate.run.status === "passed" ? "ok" : gate.run.status === "failed" ? "fail" : "warn") : "muted"}`} />
-              <div style={{ flex: 1 }}>
-                <strong>
-                  {gate.run ? `Pipeline ${gate.run.id}` : "No pipeline linked"}
-                  {gate.run ? ` — ${gate.run.status}` : ""}
-                </strong>
-                {gate.run ? (
-                  <div className="muted" style={{ fontSize: "0.85rem" }}>
-                    <Link href={`/${org}/${repo}/pipelines/${gate.run.id}`}>View run details</Link>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <div className="merge-status">
-              <span className={`merge-dot ${approvals >= gate.approvalsRequired ? "ok" : "warn"}`} />
+              <span className={`merge-dot ${approvalsMet ? "ok" : "warn"}`} />
               <div style={{ flex: 1 }}>
                 <strong>Review approvals</strong>
-                <div className="muted" style={{ fontSize: "0.85rem" }}>{approvals} of {gate.approvalsRequired} required approvals</div>
+                <div className="muted" style={{ fontSize: "0.85rem" }}>{view.approvals} of {view.requiredApprovals} required approvals</div>
               </div>
             </div>
             <div className="merge-actions">
               {view.state === "merged" ? (
-                <p className="success-text" style={{ margin: 0 }}>✓ This change request was merged.</p>
+                <p className="success-text" style={{ margin: 0 }}>
+                  ✓ This change request was merged{view.mergedAt ? ` on ${formatDateTime(view.mergedAt)}` : ""}.
+                </p>
               ) : (
                 <>
                   <div className="meta-row">
-                    <Link className="button-secondary" href={`${crBase}?review=approve`}>Approve</Link>
-                    <Link className="button-secondary" href={`/${org}/${repo}/diff/${view.baseRevision}/${view.headRevision}`}>View diff</Link>
-                    {gate.canMerge ? (
-                      <Link className="button" href={`${crBase}?review=merge`}>Merge change request</Link>
+                    <form action={approve}>
+                      <button className="button-secondary" type="submit">Approve</button>
+                    </form>
+                    {view.baseRevision && view.headRevision ? (
+                      <Link className="button-secondary" href={`/${org}/${repo}/diff/${view.baseRevision}/${view.headRevision}`}>View diff</Link>
+                    ) : null}
+                    {canMerge ? (
+                      <form action={merge}>
+                        <button className="button" type="submit">Merge change request</button>
+                      </form>
                     ) : (
                       <span className="button button-disabled">Merge blocked</span>
                     )}
                   </div>
-                  {mergeBlocked || !gate.canMerge ? (
+                  {!canMerge ? (
                     <p className="muted top-gap-sm" style={{ margin: "0.5rem 0 0", fontSize: "0.85rem" }}>
-                      Merging requires a green pipeline and {gate.approvalsRequired} approval(s) per branch protection.
+                      Merging requires {view.requiredApprovals} approval(s) per branch protection.
                     </p>
                   ) : null}
                 </>
@@ -188,9 +184,9 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
           {/* Comment + inline forms */}
           <article className="panel">
             <h3>Add a review comment</h3>
-            <form className="form-grid" method="get">
+            <form className="form-grid" action={comment}>
               <div className="field">
-                <textarea name="commentBody" placeholder="Summarize the review and reference follow-up issues like #14." rows={4} />
+                <textarea name="commentBody" placeholder="Summarize the review and reference follow-up issues like #14." rows={4} required />
               </div>
               <div className="meta-row" style={{ justifyContent: "flex-end" }}>
                 <button className="button" type="submit">Comment</button>
@@ -198,19 +194,19 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
             </form>
             <div className="section-divider top-gap" />
             <h3 className="top-gap-sm">Comment on a specific line</h3>
-            <form className="form-grid" method="get">
+            <form className="form-grid" action={inlineComment}>
               <div className="split-fields">
                 <div className="field">
                   <label htmlFor="inlinePath">File path</label>
-                  <input id="inlinePath" name="inlinePath" defaultValue="Source/LoreHub/HUD.cpp" type="text" />
+                  <input id="inlinePath" name="inlinePath" placeholder="Source/LoreHub/HUD.cpp" type="text" required />
                 </div>
                 <div className="field">
                   <label htmlFor="inlineLine">Line</label>
-                  <input id="inlineLine" name="inlineLine" defaultValue="4" type="text" />
+                  <input id="inlineLine" name="inlineLine" defaultValue="1" type="number" min="1" />
                 </div>
               </div>
               <div className="field">
-                <textarea name="inlineComment" placeholder="Comment directly on the diff with @mentions or cross-references." rows={3} />
+                <textarea name="inlineComment" placeholder="Comment directly on the diff with @mentions or cross-references." rows={3} required />
               </div>
               <div className="meta-row" style={{ justifyContent: "flex-end" }}>
                 <button className="button-secondary" type="submit">Add inline comment</button>
@@ -224,8 +220,8 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
             <h4>Reviewers</h4>
             {view.reviewers.length === 0 ? <span className="muted">None requested</span> : view.reviewers.map((reviewer) => (
               <div key={reviewer} className="meta-row">
-                <Avatar name={getUser(reviewer)?.name ?? reviewer} />
-                <span>{getUser(reviewer)?.name ?? reviewer}</span>
+                <Avatar name={reviewer} />
+                <span>{reviewer}</span>
               </div>
             ))}
           </div>
@@ -248,7 +244,8 @@ export default async function ChangeRequestDetailPage({ params, searchParams }: 
           <div className="sidebar-block">
             <h4>Revisions</h4>
             <div className="muted" style={{ fontSize: "0.82rem", fontFamily: "var(--font-mono)" }}>
-              base {view.baseRevision.slice(0, 7)}<br />head {view.headRevision.slice(0, 7)}
+              {view.baseRevision ? <>base {view.baseRevision.slice(0, 7)}<br /></> : null}
+              {view.headRevision ? <>head {view.headRevision.slice(0, 7)}</> : null}
               {view.mergeRevision ? <><br />merge {view.mergeRevision.slice(0, 7)}</> : null}
             </div>
           </div>

@@ -44,7 +44,14 @@ Authentication uses an `HttpOnly` session cookie set by the auth endpoints.
 | GET | `/api/v1/orgs/{org}/repos/{repo}/issues` | List issues (`?state=open\|closed\|all`) |
 | POST | `/api/v1/orgs/{org}/repos/{repo}/issues` | Create an issue (`{title,body}`) |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/issues/{number}` | Issue detail with comments |
-| GET | `/api/v1/orgs/{org}/repos/{repo}/change-requests` | List change requests (`?state=…`) |
+| PATCH | `/api/v1/orgs/{org}/repos/{repo}/issues/{number}` | Update issue state (`{state:"open"\|"closed"}`) |
+| POST | `/api/v1/orgs/{org}/repos/{repo}/issues/{number}/comments` | Add a comment (`{body}`) |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/change-requests` | List change requests (`?state=…`); includes labels + approval counts |
+| POST | `/api/v1/orgs/{org}/repos/{repo}/change-requests` | Open a change request (`{title,body,source_branch,target_branch}`) |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/change-requests/{number}` | CR detail — reviews, comments, grouped inline threads, reviewers, labels, linked issues, revisions, approval gate |
+| POST | `/api/v1/orgs/{org}/repos/{repo}/change-requests/{number}/reviews` | Add a review (`{state:"approved"\|"commented"\|"requested",body}`) |
+| POST | `/api/v1/orgs/{org}/repos/{repo}/change-requests/{number}/comments` | Add a CR comment; inline when `{file_path,line}` are set |
+| POST | `/api/v1/orgs/{org}/repos/{repo}/change-requests/{number}/merge` | Merge (blocked until `required_approvals` met) |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/branches` | List branches |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/locks` | List file locks |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/labels` | List labels |

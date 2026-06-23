@@ -78,24 +78,45 @@ INSERT INTO issue_comments (issue_id, author_id, body) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Change requests -------------------------------------------------------
-INSERT INTO change_requests (id, repo_id, number, title, body, state, author_id, source_branch, target_branch, base_revision, head_revision) VALUES
+INSERT INTO change_requests (id, repo_id, number, title, body, state, author_id, source_branch, target_branch, base_revision, head_revision, merge_revision, created_at, merged_at) VALUES
     ('c8000001-0000-0000-0000-000000000001', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 1,
      'Tighten hero corridor specular mask',
-     'Cleans up the emissive seams and reduces visible compression on the trim edges.',
-     'open', '44444444-4444-4444-4444-444444444444', 'feature/arena-lighting', 'main', 'b52fd9aa8c3e', 'f34ab29ce810')
+     'Cleans up the emissive seams and reduces visible compression on the trim edges. Fixes #1 — please check the bottom trim seam in `Content/Materials/M_HeroCorridor.uasset`.',
+     'open', '44444444-4444-4444-4444-444444444444', 'feature/arena-lighting', 'main', 'b52fd9aa8c3e', 'f34ab29ce810', NULL, now() - interval '2 days', NULL),
+    ('c8000001-0000-0000-0000-000000000002', 'dddddddd-dddd-dddd-dddd-dddddddddddd', 2,
+     'Crossfade the arena ambience loop',
+     'Adds a 120ms equal-power crossfade at the loop boundary to remove the audible click. Closes #2.',
+     'merged', '33333333-3333-3333-3333-333333333333', 'feature/ambience-crossfade', 'main', 'a18cc0d2f5e1', 'b52fd9aa8c3e', 'c93de7710aa4', now() - interval '6 days', now() - interval '4 days')
 ON CONFLICT (repo_id, number) DO NOTHING;
 
 INSERT INTO cr_reviewers (cr_id, user_id) VALUES
-    ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111')
+    ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111'),
+    ('c8000001-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO cr_labels (cr_id, label_id) VALUES
     ('c8000001-0000-0000-0000-000000000001', '1ab00001-0000-0000-0000-000000000002'),
-    ('c8000001-0000-0000-0000-000000000001', '1ab00001-0000-0000-0000-000000000004')
+    ('c8000001-0000-0000-0000-000000000001', '1ab00001-0000-0000-0000-000000000004'),
+    ('c8000001-0000-0000-0000-000000000002', '1ab00001-0000-0000-0000-000000000003')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO cr_linked_issues (cr_id, issue_id) VALUES
+    ('c8000001-0000-0000-0000-000000000001', '15500001-0000-0000-0000-000000000001'),
+    ('c8000001-0000-0000-0000-000000000002', '15500001-0000-0000-0000-000000000002')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO cr_reviews (cr_id, reviewer_id, state, body) VALUES
-    ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'requested', 'Looks close — can you check the bottom trim seam?')
+    ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'requested', 'Looks close — can you check the bottom trim seam?'),
+    ('c8000001-0000-0000-0000-000000000002', '11111111-1111-1111-1111-111111111111', 'approved', 'Loop is seamless now. Approved.')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO cr_comments (cr_id, author_id, body, file_path, line, resolved) VALUES
+    ('c8000001-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333',
+     'Nice — the seam is much less visible. One more pass on the lower trim and this is good to merge.', NULL, NULL, false),
+    ('c8000001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111',
+     'The specular value here still reads a little hot under the emissive pass.', 'Content/Materials/M_HeroCorridor.uasset', 42, false),
+    ('c8000001-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444',
+     'Dropped it by 0.05 — should sit right now.', 'Content/Materials/M_HeroCorridor.uasset', 42, false)
 ON CONFLICT DO NOTHING;
 
 -- Locks -----------------------------------------------------------------

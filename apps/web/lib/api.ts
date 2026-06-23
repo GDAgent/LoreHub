@@ -33,6 +33,59 @@ export async function apiGet<T>(path: string, options: ApiGetOptions = {}): Prom
   }
 }
 
+export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+export async function apiPost<T>(
+  path: string,
+  body: unknown,
+  options: ApiGetOptions = {},
+): Promise<ApiResult<T>> {
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "content-type": "application/json",
+        ...(options.cookie ? { cookie: options.cookie } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return { ok: false, error: text || `request failed (${response.status})` };
+    }
+    return { ok: true, data: (await response.json()) as T };
+  } catch {
+    return { ok: false, error: "API unreachable" };
+  }
+}
+
+export async function apiSend<T>(
+  method: "POST" | "PATCH" | "DELETE",
+  path: string,
+  body: unknown,
+  options: ApiGetOptions = {},
+): Promise<ApiResult<T>> {
+  try {
+    const response = await fetch(`${API_BASE}${path}`, {
+      method,
+      cache: "no-store",
+      headers: {
+        "content-type": "application/json",
+        ...(options.cookie ? { cookie: options.cookie } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return { ok: false, error: text || `request failed (${response.status})` };
+    }
+    return { ok: true, data: (await response.json()) as T };
+  } catch {
+    return { ok: false, error: "API unreachable" };
+  }
+}
+
 export function apiBaseUrl(): string {
   return API_BASE;
 }
@@ -67,7 +120,52 @@ export type ApiChangeRequestListItem = {
   author_username: string | null;
   source_branch: string;
   target_branch: string;
+  labels: string[];
+  approvals: number;
   created_at: string;
+};
+
+export type ApiCrReview = {
+  reviewer_username: string | null;
+  state: string;
+  body: string;
+  created_at: string;
+};
+
+export type ApiCrComment = {
+  author_username: string | null;
+  body: string;
+  created_at: string;
+};
+
+export type ApiCrInlineThread = {
+  file_path: string;
+  line: number;
+  resolved: boolean;
+  comments: ApiCrComment[];
+};
+
+export type ApiChangeRequestDetail = {
+  number: number;
+  title: string;
+  state: string;
+  body: string;
+  author_username: string | null;
+  source_branch: string;
+  target_branch: string;
+  base_revision: string | null;
+  head_revision: string | null;
+  merge_revision: string | null;
+  created_at: string;
+  merged_at: string | null;
+  labels: string[];
+  reviewers: string[];
+  linked_issues: number[];
+  reviews: ApiCrReview[];
+  comments: ApiCrComment[];
+  inline_threads: ApiCrInlineThread[];
+  approvals: number;
+  required_approvals: number;
 };
 
 export type ApiBranch = {

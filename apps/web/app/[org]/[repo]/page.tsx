@@ -48,7 +48,7 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
         <RepoTabs org={org} repo={repo} active="code" />
       </section>
 
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0, 2.4fr) minmax(0, 1fr)", alignItems: "start" }}>
+      <div className="repo-home-grid">
         <div style={{ display: "grid", gap: "1rem" }}>
           <div className="panel" style={{ padding: 0 }}>
             <div className="meta-row" style={{ justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-muted)" }}>

@@ -1515,6 +1515,18 @@ table.table tbody tr:hover { background: var(--surface-hover); }
   .detail-grid { grid-template-columns: 1fr; }
 }
 
+/* Repository home: main column + sidebar, collapses on narrow screens */
+.repo-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .repo-home-grid { grid-template-columns: 1fr; }
+}
+
 .sidebar-block {
   display: grid;
   gap: 0.4rem;

@@ -1236,18 +1236,21 @@ This is the order that maximizes felt progress while de-risking the hard parts:
 State of the world: the full stack runs and is verified live (Postgres → API → Next.js web; a real `loreserver` 0.8.4 builds & runs). Auth, issues (list/detail/create), and read endpoints for CRs/branches/locks/labels are real. **Everything below is what still stands between this and a no-demo, no-stub, enterprise-shippable product.** (Pre-release: no back-compat, no data migrations, no deprecated shims.)
 
 ### 30.1 Frontend still demo-backed (wire to API, then delete `demo-*.ts`)
-Live today: issues list + detail. **Still reading `apps/web/lib/demo-*.ts` (27 pages):**
+Live today: **collaboration vertical fully wired** — issues list/detail/create/comment/close and
+change requests list/detail/create/review/comment/inline-comment/merge all read & mutate the live
+API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts` is now live-only.
+**Still reading `apps/web/lib/demo-*.ts`:**
 - [ ] Repo home, code tree/file viewer, revisions list/detail, diff, branches — `demo-repository.ts`
-- [ ] Change requests list + detail (needs CR labels/reviews/approvals in API) — `demo-collaboration.ts`
 - [ ] Pipelines list + run detail — `demo-pipelines.ts`
-- [ ] Assets browser/detail, binary-diff, analytics, locks, obliterate — `demo-assets.ts`
+- [ ] Assets browser/detail, binary-diff, analytics, locks, obliterate — `demo-assets.ts` (locks/branches API ready in `repo-data.ts`)
 - [ ] Dashboard, org settings, teams, notifications — `demo-collaboration.ts`
 - [ ] Admin + enterprise (SSO, directory, audit, SLA, billing), SSO handoff — `demo-enterprise.ts`
-- [ ] **Then:** delete all `demo-*.ts` and the demo fallback in `lib/repo-data.ts` (fallback is dev-only scaffolding, not shippable).
+- [ ] **Then:** delete all `demo-*.ts` (collaboration pages no longer import `demo-collaboration` for CRs/issues; remaining importers: dashboard, notifications, settings, teams, obliterate).
 
 ### 30.2 API endpoints still missing
 - [ ] Orgs/users/teams/members; repo create/settings/collaborators
-- [ ] CR detail (reviews, reviewers, comments, inline threads, approvals, merge gate); CR/issue/lock/branch **mutations** (currently issue create only)
+- [x] CR detail (reviews, reviewers, comments, grouped inline threads, approvals, merge gate); issue + CR **mutations** (create/comment/state, CR review/comment/inline/merge with approval gate)
+- [ ] Lock/branch mutations; label assignment; milestones; assignees
 - [ ] Tree/blob/diff (Lore-backed); revisions list/detail
 - [ ] Pipelines (runs, jobs, artifacts) — replace the hardcoded WS demo log stream in `routes/pipelines.rs`
 - [ ] Assets + storage analytics (real dedup/chunk stats)

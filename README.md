@@ -12,8 +12,10 @@ PostgreSQL → Axum API → Next.js web, with a real `loreserver` integration se
 **Real today** (DB-backed, verified end-to-end):
 
 - Argon2 password auth with sessions (register / login / logout / `me`)
-- Issues — list, detail, create — served from PostgreSQL
-- Read APIs for change requests, branches, locks, labels
+- Issues — list, detail, create, comment, open/close — served from PostgreSQL
+- Change requests — list, detail (reviews, comments, inline threads, approvals),
+  create, review/approve, comment, merge with an approval gate
+- Read APIs for branches, locks, labels
 - Repository CRUD + partition-scoped Lore JWT minting
 - A clean single-baseline schema, applied automatically on API startup
 - `LoreBackend` trait with a conformance-tested fake and a real-server seam
@@ -76,9 +78,10 @@ npm run build:web
 
 ### Development Notes
 
-- Web pages fetch live data via `apps/web/lib/repo-data.ts`, falling back to
-  `demo-*.ts` modules when the API is unreachable. The demo modules and fallback
-  are dev scaffolding, removed page-by-page as flows are wired (`PLAN.md` §30.1).
+- `apps/web/lib/repo-data.ts` is the **live-only** data layer (typed client in
+  `apps/web/lib/api.ts`); the collaboration pages (issues + change requests) read
+  and mutate the API through it via server actions. The remaining pages still read
+  `demo-*.ts` modules and are wired page-by-page (`PLAN.md` §30.1).
 - The API owns migration startup, Argon2 auth + sessions, JWT minting, repository
   CRUD, the issue/CR/branch/lock read APIs, and pipeline log WebSocket streaming.
 - Prefer tightening existing route/component seams over adding parallel scaffolds.

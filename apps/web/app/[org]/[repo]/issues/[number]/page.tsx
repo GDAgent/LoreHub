@@ -5,7 +5,8 @@ import { RepoTabs } from "@/components/repo-tabs";
 import { formatDateTime, labelStyle } from "@/lib/format";
 import { RichText } from "@/lib/render-rich-text";
 import { getIssueDetail } from "@/lib/repo-data";
-import { getSearchParamValue } from "@/lib/search-params";
+
+import { addIssueCommentAction, setIssueStateAction } from "./actions";
 
 type IssueDetailPageProps = {
   params: Promise<{
@@ -13,7 +14,6 @@ type IssueDetailPageProps = {
     repo: string;
     number: string;
   }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function Avatar({ name }: { name: string }) {
@@ -24,34 +24,18 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-export default async function IssueDetailPage({ params, searchParams }: IssueDetailPageProps) {
+export default async function IssueDetailPage({ params }: IssueDetailPageProps) {
   const { org, repo, number } = await params;
-  const queryParams = await searchParams;
-  const sourced = await getIssueDetail(org, repo, Number(number));
+  const issueNumber = Number(number);
+  const view = await getIssueDetail(org, repo, issueNumber);
 
-  if (!sourced) {
+  if (!view) {
     notFound();
   }
 
-  const { data: issue, live } = sourced;
-
-  // Lightweight optimistic overlay for the GET-based comment/close form. Real
-  // persistence is wired through the API's POST endpoints; these previews keep
-  // the interaction legible until the form is upgraded to a server action.
-  const action = getSearchParamValue(queryParams.action);
-  const commentBody = getSearchParamValue(queryParams.commentBody);
-  const extraLabel = getSearchParamValue(queryParams.label);
-
-  const comments = commentBody?.trim()
-    ? [...issue.comments, { author: "You", body: commentBody.trim(), createdAt: new Date().toISOString() }]
-    : issue.comments;
-  const labels = extraLabel?.trim() && !issue.labels.includes(extraLabel.trim())
-    ? [...issue.labels, extraLabel.trim()]
-    : issue.labels;
-  const state = action === "close" ? "closed" : action === "reopen" ? "open" : issue.state;
-
-  const view = { ...issue, comments, labels, state };
   const open = view.state === "open";
+  const addComment = addIssueCommentAction.bind(null, org, repo, issueNumber);
+  const toggleState = setIssueStateAction.bind(null, org, repo, issueNumber, open ? "closed" : "open");
 
   return (
     <main className="shell page">
@@ -72,10 +56,6 @@ export default async function IssueDetailPage({ params, searchParams }: IssueDet
           </span>
           <span className="muted">
             <strong>{view.author}</strong> opened this issue on {formatDateTime(view.createdAt)} · {view.comments.length} comments
-          </span>
-          <span className="pill muted-pill" title={live ? "Served from the live API" : "Served from demo data (API unavailable)"}>
-            <span className={`merge-dot ${live ? "ok" : "muted"}`} style={{ width: 8, height: 8, display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
-            {live ? "live" : "demo"}
           </span>
         </div>
       </header>
@@ -104,16 +84,18 @@ export default async function IssueDetailPage({ params, searchParams }: IssueDet
 
           <article className="panel">
             <h3>Add a comment</h3>
-            <form className="form-grid" method="get">
+            <form className="form-grid" action={addComment}>
               <div className="field">
-                <textarea name="commentBody" placeholder="Leave a comment. Reference #14, tag @maya, or link r:f34ab29." rows={5} />
+                <textarea name="commentBody" placeholder="Leave a comment. Reference #14, tag @maya, or link r:f34ab29." rows={5} required />
               </div>
               <div className="meta-row" style={{ justifyContent: "flex-end" }}>
-                <Link className="button-secondary" href={`/${org}/${repo}/issues/${view.number}?action=${open ? "close" : "reopen"}`}>
-                  {open ? "Close issue" : "Reopen issue"}
-                </Link>
                 <button className="button" type="submit">Comment</button>
               </div>
+            </form>
+            <form action={toggleState} className="top-gap-sm">
+              <button className="button-secondary" type="submit">
+                {open ? "Close issue" : "Reopen issue"}
+              </button>
             </form>
           </article>
         </div>
@@ -143,10 +125,6 @@ export default async function IssueDetailPage({ params, searchParams }: IssueDet
           <div className="sidebar-block">
             <h4>Milestone</h4>
             <span>{view.milestone ?? "No milestone"}</span>
-          </div>
-          <div className="sidebar-block">
-            <h4>Actions</h4>
-            <Link className="inline-link" href={`/${org}/${repo}/issues/${view.number}?label=blocked`}>Add “blocked” label</Link>
           </div>
         </aside>
       </div>

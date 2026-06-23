@@ -1,10 +1,11 @@
 import Link from "next/link";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { buildCreatedIssue } from "@/lib/demo-collaboration";
 import { formatDate, labelStyle } from "@/lib/format";
-import { getIssues, type IssueRow } from "@/lib/repo-data";
+import { getIssues } from "@/lib/repo-data";
 import { getSearchParamValue } from "@/lib/search-params";
+
+import { createIssueAction } from "./actions";
 
 type IssuesPageProps = {
   params: Promise<{
@@ -20,27 +21,9 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
   const query = getSearchParamValue(queryParams.q)?.trim();
   const state = getSearchParamValue(queryParams.state) ?? "open";
   const label = getSearchParamValue(queryParams.label) ?? "all";
-  const title = getSearchParamValue(queryParams.title);
-  const body = getSearchParamValue(queryParams.body);
-  const labels = getSearchParamValue(queryParams.labels);
-  const assignees = getSearchParamValue(queryParams.assignees);
+  const error = getSearchParamValue(queryParams.error);
 
-  const created = title?.trim() && body?.trim()
-    ? buildCreatedIssue({ title, body, labels, assignees })
-    : null;
-  const createdIssue: IssueRow | null = created
-    ? {
-        number: created.number,
-        title: created.title,
-        state: created.state,
-        labels: created.labels,
-        author: "You",
-        createdAt: created.createdAt,
-        commentCount: created.comments.length,
-      }
-    : null;
-
-  const { data: sourcedIssues, live } = await getIssues(org, repo);
+  const sourcedIssues = await getIssues(org, repo);
   const allIssues = sourcedIssues.filter((issue) => {
     if (label !== "all" && !issue.labels.includes(label)) {
       return false;
@@ -53,9 +36,9 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
   });
   const openCount = allIssues.filter((issue) => issue.state === "open").length;
   const closedCount = allIssues.filter((issue) => issue.state === "closed").length;
-  const issues = state === "all" ? allIssues : allIssues.filter((issue) => issue.state === state);
-  const visibleIssues = createdIssue ? [createdIssue, ...issues] : issues;
+  const visibleIssues = state === "all" ? allIssues : allIssues.filter((issue) => issue.state === state);
   const base = `/${org}/${repo}/issues`;
+  const createIssue = createIssueAction.bind(null, org, repo);
 
   return (
     <main className="shell page">
@@ -66,8 +49,8 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
         <RepoTabs org={org} repo={repo} active="issues" />
       </section>
 
-      {createdIssue ? (
-        <p className="success-text">✓ Created issue #{createdIssue.number}: {createdIssue.title}</p>
+      {error ? (
+        <p className="error-text">Could not create issue: {error}</p>
       ) : null}
 
       <section style={{ display: "grid", gap: "0.75rem" }}>
@@ -81,7 +64,7 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
             <summary className="button" style={{ listStyle: "none" }}>New issue</summary>
             <div className="panel" style={{ position: "absolute", right: "1.5rem", zIndex: 20, width: "min(440px, 90vw)", marginTop: "0.5rem", boxShadow: "var(--shadow-md)" }}>
               <h3>Create issue</h3>
-              <form className="form-grid" method="get">
+              <form className="form-grid" action={createIssue}>
                 <div className="field">
                   <label htmlFor="title">Title</label>
                   <input id="title" name="title" placeholder="Texture streaming spikes in hero corridor" type="text" required />
@@ -90,16 +73,6 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
                   <label htmlFor="body">Description</label>
                   <textarea id="body" name="body" placeholder="Describe the issue. Use @mentions, #issues, and !change-requests." rows={5} required />
                 </div>
-                <div className="split-fields">
-                  <div className="field">
-                    <label htmlFor="labels">Labels</label>
-                    <input id="labels" name="labels" placeholder="bug, priority:high" type="text" />
-                  </div>
-                  <div className="field">
-                    <label htmlFor="assignees">Assignees</label>
-                    <input id="assignees" name="assignees" placeholder="maya, iris" type="text" />
-                  </div>
-                </div>
                 <button className="button" type="submit">Submit new issue</button>
               </form>
             </div>
@@ -107,12 +80,6 @@ export default async function IssuesPage({ params, searchParams }: IssuesPagePro
         </div>
 
         <div>
-          <div className="meta-row" style={{ justifyContent: "flex-end", marginBottom: "0.4rem" }}>
-            <span className="pill muted-pill" title={live ? "Served from the live API" : "Served from demo data (API unavailable)"}>
-              <span className={`merge-dot ${live ? "ok" : "muted"}`} style={{ width: 8, height: 8, display: "inline-block", marginRight: 6, verticalAlign: "middle" }} />
-              {live ? "live" : "demo"}
-            </span>
-          </div>
           <div className="filter-bar">
             <Link href={`${base}?state=open`} className={state === "open" ? "active" : undefined}>
               <CircleDot /> {openCount} Open

@@ -68,6 +68,7 @@ CREATE TABLE repositories (
     visibility TEXT NOT NULL DEFAULT 'private',
     lore_partition_id BYTEA NOT NULL,
     default_branch TEXT NOT NULL DEFAULT 'main',
+    required_approvals INTEGER NOT NULL DEFAULT 1,
     archived BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT repositories_visibility_check CHECK (visibility IN ('public', 'internal', 'private')),
@@ -227,7 +228,17 @@ CREATE TABLE cr_comments (
     cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
     author_id UUID REFERENCES users(id) ON DELETE SET NULL,
     body TEXT NOT NULL,
+    -- Inline review comments set file_path + line; conversation comments leave them null.
+    file_path TEXT,
+    line INTEGER,
+    resolved BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE cr_linked_issues (
+    cr_id UUID NOT NULL REFERENCES change_requests(id) ON DELETE CASCADE,
+    issue_id UUID NOT NULL REFERENCES issues(id) ON DELETE CASCADE,
+    PRIMARY KEY (cr_id, issue_id)
 );
 
 -- ---------------------------------------------------------------------------
