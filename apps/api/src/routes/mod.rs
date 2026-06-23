@@ -1,6 +1,7 @@
 mod auth;
 mod collaboration;
 mod health;
+mod organizations;
 mod pipelines;
 mod repositories;
 
@@ -13,4 +14,5 @@ pub fn router() -> Router<crate::AppState> {
         .merge(pipelines::routes())
         .merge(repositories::routes())
         .merge(collaboration::routes())
+        .merge(organizations::routes())
 }

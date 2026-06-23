@@ -168,6 +168,28 @@ export type ApiChangeRequestDetail = {
   required_approvals: number;
 };
 
+export type ApiOrgDetail = {
+  name: string;
+  display_name: string;
+  plan: string;
+  member_count: number;
+};
+
+export type ApiOrgMember = {
+  username: string;
+  display_name: string;
+  title: string | null;
+  avatar_initials: string | null;
+  role: string;
+};
+
+export type ApiTeam = {
+  slug: string;
+  name: string;
+  description: string | null;
+  members: string[];
+};
+
 export type ApiBranch = {
   name: string;
   head_revision: string;

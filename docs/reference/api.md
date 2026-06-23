@@ -37,6 +37,15 @@ Authentication uses an `HttpOnly` session cookie set by the auth endpoints.
 | GET | `/api/v1/repositories/{id}` | Get a repository |
 | POST | `/api/v1/repositories/{id}/lore-token` | Mint a short-lived, partition-scoped Lore JWT |
 
+## Organizations
+
+| Method | Path | Description |
+| --- | --- | --- |
+| GET | `/api/v1/orgs/{org}` | Org detail (display name, plan, member count) |
+| GET | `/api/v1/orgs/{org}/members` | List org members with roles |
+| GET | `/api/v1/orgs/{org}/teams` | List teams with member names |
+| POST | `/api/v1/orgs/{org}/teams` | Create a team (`{name,description}`; slug derived) |
+
 ## Repository content (org/repo keyed)
 
 | Method | Path | Description |

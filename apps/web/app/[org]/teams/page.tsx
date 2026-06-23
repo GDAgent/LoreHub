@@ -1,7 +1,9 @@
 import Link from "next/link";
 
-import { buildCreatedTeam, demoTeams, getUser } from "@/lib/demo-collaboration";
+import { getTeams } from "@/lib/org-data";
 import { getSearchParamValue } from "@/lib/search-params";
+
+import { createTeamAction } from "./actions";
 
 type TeamsPageProps = {
   params: Promise<{
@@ -13,11 +15,9 @@ type TeamsPageProps = {
 export default async function TeamsPage({ params, searchParams }: TeamsPageProps) {
   const { org } = await params;
   const queryParams = await searchParams;
-  const teamName = getSearchParamValue(queryParams.teamName);
-  const teamDescription = getSearchParamValue(queryParams.teamDescription);
-  const teamMembers = getSearchParamValue(queryParams.teamMembers);
-  const createdTeam = teamName?.trim() ? buildCreatedTeam({ name: teamName, description: teamDescription, members: teamMembers }) : null;
-  const visibleTeams = createdTeam ? [createdTeam, ...demoTeams] : demoTeams;
+  const error = getSearchParamValue(queryParams.error);
+  const visibleTeams = await getTeams(org);
+  const createTeam = createTeamAction.bind(null, org);
 
   return (
     <main className="shell page">
@@ -32,7 +32,7 @@ export default async function TeamsPage({ params, searchParams }: TeamsPageProps
         </nav>
       </section>
 
-      {createdTeam ? <p className="success-text">✓ Created team {createdTeam.name}.</p> : null}
+      {error ? <p className="error-text">Could not create team: {error}</p> : null}
 
       <div className="section-header">
         <div>
@@ -43,7 +43,7 @@ export default async function TeamsPage({ params, searchParams }: TeamsPageProps
           <summary className="button" style={{ listStyle: "none" }}>New team</summary>
           <div className="panel" style={{ position: "absolute", right: "1.5rem", zIndex: 20, width: "min(460px, 90vw)", marginTop: "0.5rem", boxShadow: "var(--shadow-md)" }}>
             <h3 style={{ marginTop: 0 }}>Create team</h3>
-            <form className="form-grid" method="get">
+            <form className="form-grid" action={createTeam}>
               <div className="field">
                 <label htmlFor="teamName">Team name</label>
                 <input id="teamName" name="teamName" placeholder="Narrative Reviewers" type="text" required />
@@ -52,34 +52,34 @@ export default async function TeamsPage({ params, searchParams }: TeamsPageProps
                 <label htmlFor="teamDescription">Description</label>
                 <textarea id="teamDescription" name="teamDescription" placeholder="Owns story beats, cutscene timing, and dialogue review." rows={3} />
               </div>
-              <div className="field">
-                <label htmlFor="teamMembers">Members</label>
-                <input id="teamMembers" name="teamMembers" placeholder="@maya, @omar" type="text" />
-              </div>
               <button className="button" type="submit">Create team</button>
             </form>
           </div>
         </details>
       </div>
 
-      <div className="list-rows">
-        {visibleTeams.map((team) => (
-          <div key={team.slug} className="list-row">
-            <span className="list-row-icon state-open"><TeamIcon /></span>
-            <div className="list-row-main">
-              <div className="list-row-title">
-                <Link href={`/${org}/teams`}>{team.name}</Link>
-                <span className="pill muted-pill" style={{ marginLeft: "0.5rem" }}>{team.slug}</span>
-              </div>
-              <p className="muted" style={{ margin: "0.25rem 0", fontSize: "0.88rem" }}>{team.description}</p>
-              <div className="list-row-meta">
-                <span>{team.members.length} members</span>
-                <span>· {team.members.map((member) => getUser(member)?.name ?? member).join(", ")}</span>
+      {visibleTeams.length === 0 ? (
+        <div className="list-rows"><div className="empty-state" style={{ border: "none" }}>No teams yet.</div></div>
+      ) : (
+        <div className="list-rows">
+          {visibleTeams.map((team) => (
+            <div key={team.slug} className="list-row">
+              <span className="list-row-icon state-open"><TeamIcon /></span>
+              <div className="list-row-main">
+                <div className="list-row-title">
+                  <Link href={`/${org}/teams`}>{team.name}</Link>
+                  <span className="pill muted-pill" style={{ marginLeft: "0.5rem" }}>{team.slug}</span>
+                </div>
+                {team.description ? <p className="muted" style={{ margin: "0.25rem 0", fontSize: "0.88rem" }}>{team.description}</p> : null}
+                <div className="list-row-meta">
+                  <span>{team.members.length} members</span>
+                  {team.members.length > 0 ? <span>· {team.members.join(", ")}</span> : null}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

@@ -23,6 +23,18 @@ INSERT INTO org_members (org_id, user_id, role) VALUES
     ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', '44444444-4444-4444-4444-444444444444', 'Developer')
 ON CONFLICT (org_id, user_id) DO NOTHING;
 
+-- Teams -----------------------------------------------------------------
+INSERT INTO teams (id, org_id, slug, name, description) VALUES
+    ('7ea00001-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'art-reviewers', 'Art Reviewers', 'Owns texture, material, and environment review for binary asset changes.'),
+    ('7ea00001-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'audio', 'Audio', 'Ambience, SFX, and music pipeline ownership.')
+ON CONFLICT (org_id, slug) DO NOTHING;
+
+INSERT INTO team_members (team_id, user_id) VALUES
+    ('7ea00001-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111'),
+    ('7ea00001-0000-0000-0000-000000000001', '44444444-4444-4444-4444-444444444444'),
+    ('7ea00001-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333')
+ON CONFLICT DO NOTHING;
+
 -- Repository ------------------------------------------------------------
 INSERT INTO repositories (id, org_id, name, display_name, description, visibility, lore_partition_id, default_branch) VALUES
     ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'demo', 'Arena Vertical Slice',

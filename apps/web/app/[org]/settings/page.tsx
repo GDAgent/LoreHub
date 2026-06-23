@@ -1,19 +1,17 @@
 import Link from "next/link";
 
-import { demoMembers, getUser } from "@/lib/demo-collaboration";
-import { getSearchParamValue } from "@/lib/search-params";
+import { getOrg, getOrgMembers } from "@/lib/org-data";
 
 type OrganizationSettingsPageProps = {
   params: Promise<{
     org: string;
   }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function OrganizationSettingsPage({ params, searchParams }: OrganizationSettingsPageProps) {
+export default async function OrganizationSettingsPage({ params }: OrganizationSettingsPageProps) {
   const { org } = await params;
-  const queryParams = await searchParams;
-  const highlightedMember = getSearchParamValue(queryParams.member);
+  const [orgDetail, members] = await Promise.all([getOrg(org), getOrgMembers(org)]);
+  const displayName = orgDetail?.displayName ?? org;
 
   return (
     <main className="shell page">
@@ -41,7 +39,7 @@ export default async function OrganizationSettingsPage({ params, searchParams }:
         <div className="grid two">
           <div className="field">
             <label htmlFor="org-name">Display name</label>
-            <input id="org-name" name="org-name" defaultValue={org} type="text" />
+            <input id="org-name" name="org-name" defaultValue={displayName} type="text" />
           </div>
           <div className="field">
             <label htmlFor="org-url">Public URL</label>
@@ -54,25 +52,20 @@ export default async function OrganizationSettingsPage({ params, searchParams }:
       <section className="panel">
         <div className="section-header">
           <h2 style={{ margin: 0 }}>Members</h2>
-          <span className="muted">{demoMembers.length} members</span>
+          <span className="muted">{members.length} members</span>
         </div>
         <table className="table">
           <thead>
-            <tr><th>Name</th><th>Title</th><th>Org role</th><th>Repo role</th></tr>
+            <tr><th>Name</th><th>Title</th><th>Org role</th></tr>
           </thead>
           <tbody>
-            {demoMembers.map((member) => {
-              const user = getUser(member.username);
-              const highlighted = highlightedMember === member.username;
-              return (
-                <tr key={member.username} style={highlighted ? { background: "var(--brand-soft)" } : undefined}>
-                  <td><strong>{user?.name ?? member.username}</strong></td>
-                  <td className="muted">{user?.title ?? "Contributor"}</td>
-                  <td><span className="pill muted-pill">{member.orgRole}</span></td>
-                  <td>{member.repoRole}</td>
-                </tr>
-              );
-            })}
+            {members.map((member) => (
+              <tr key={member.username}>
+                <td><strong>{member.displayName}</strong> <span className="muted">@{member.username}</span></td>
+                <td className="muted">{member.title ?? "Contributor"}</td>
+                <td><span className="pill muted-pill">{member.role}</span></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
