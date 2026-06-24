@@ -40,8 +40,8 @@ The defaults match the Postgres above. Key variables:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/lorehub` | API database |
-| `LORE_BACKEND` | `fake` | `fake` (in-process) or `http` (real loreserver) |
-| `LORE_SERVER_URL` | `http://localhost:8081` | loreserver address when `LORE_BACKEND=http` |
+| `LORE_BACKEND` | `http` | `http` (real loreserver over gRPC; default) or `fake` (in-process, dev/tests only) |
+| `LORE_SERVER_URL` | `http://127.0.0.1:41337` | loreserver gRPC address when `LORE_BACKEND=http` |
 | `LORE_JWT_SECRET` | dev value | **Change in any non-local environment** |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | API base the web app calls |
 
@@ -92,10 +92,14 @@ checkout and point LoreHub at it:
 cargo build -p lore-server
 ./target/debug/loreserver          # gRPC+QUIC :41337, HTTP :41339
 
-# in lorehub: set LORE_BACKEND=http, LORE_SERVER_URL=http://localhost:8081, restart the API
+# lorehub defaults to LORE_BACKEND=http / LORE_SERVER_URL=http://127.0.0.1:41337,
+# so the API talks to a local loreserver out of the box. Set LORE_BACKEND=fake
+# for offline dev (in-process backend, no server).
 ```
 
-> Real gRPC wiring of the read path is in progress — see `PLAN.md` §30.3.
+> The gRPC read path (provision + branches/revisions/tree/blob) is implemented;
+> see `PLAN.md` §30.3. Verify it with `cargo test -p lore-client --test live_grpc
+> -- --ignored` while a loreserver is running.
 
 ## Next steps
 

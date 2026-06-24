@@ -14,11 +14,12 @@ impl Config {
                 "postgres://postgres:postgres@localhost:5432/lorehub".to_owned()
             }),
             lore_server_url: std::env::var("LORE_SERVER_URL")
-                .unwrap_or_else(|_| "http://localhost:8081".to_owned()),
-            // "http" talks to a real lore-server; "fake" uses the in-process
-            // conformance-tested fake (default until a lore-server is published).
+                .unwrap_or_else(|_| "http://127.0.0.1:41337".to_owned()),
+            // "http" talks to a real loreserver over gRPC (the default). "fake"
+            // selects the in-process conformance-tested backend for offline dev
+            // and tests only — it is never the default.
             lore_backend: std::env::var("LORE_BACKEND")
-                .unwrap_or_else(|_| "fake".to_owned())
+                .unwrap_or_else(|_| "http".to_owned())
                 .to_lowercase(),
             lore_jwt_secret: std::env::var("LORE_JWT_SECRET")
                 .unwrap_or_else(|_| "local-development-secret-change-me".to_owned()),

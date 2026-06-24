@@ -1068,7 +1068,7 @@ This section is for operators choosing between CE, EE, and managed-cloud style p
 | **Frontend data** | Nearly every page renders **static demo data** from `apps/web/lib/demo-*.ts`. No real fetching, no mutations, no persistence | Prototype, not product |
 | **Styling** | Hand-rolled **1,000-line `globals.css`** using dark glassmorphism (gradients, blur, rounded "panel" cards). **No Tailwind, no shadcn/ui** despite §5 claiming them. No design tokens beyond a few CSS vars, no component library, no light mode | Looks like a generic landing page, not a dev platform; primary source of "ugly" |
 | **Backend (API)** | ~760 LOC of Rust total. `health`, partial repository routes, a stub `auth.rs` JWT issuer, stub `pipelines.rs`, `error.rs`, `config.rs` | Skeleton only |
-| **Lore integration** | `packages/lore-client` is ~87 LOC and does **not** speak to a real Lore server (no FFI, no gRPC) | Not implemented |
+| **Lore integration** | `packages/lore-client` speaks real gRPC to `loreserver` (provision + branch/revision/tree/blob reads; vendored tonic bindings); `http` is the default backend | Implemented (reads); writes/diff/locks TODO |
 | **Database** | One baseline migration; SQLx wiring partial; most tables from §13 not exercised by code | Not real |
 | **Worker** | `main.rs` + `runner.rs` (~110 LOC); CI runner is a demo path; no real queue, no streaming-from-real-jobs | Scaffold |
 | **Auth/sessions** | No real login, no session store, no password hashing in use, no OAuth, SSO/LDAP are demo UI only | Not real |
@@ -1152,8 +1152,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 
 ### 24.4 Lore integration (`packages/lore-client`)
 - [x] Define the transport seam behind a stable trait: `LoreBackend` (async-trait, `Send + Sync`, dyn-compatible) with provisioning + read methods and serde-able data types (`LoreRevision`, `LoreBranch`, `LoreTreeEntry`, `LoreBlob`).
-- [~] Implement the operations. *(Done: partition provisioning (real seam), list revisions/branches, browse tree, read blob via the trait. TODO on the real `LoreClient`: wire gRPC/`lore-capi` for the read methods, plus diff, locks, links, obliteration two-phase, metadata read/write.)*
-- [ ] Pin and document the exact Lore server version; integration tests against a real `lore-server` in Compose.
+- [x] Implement the operations over real gRPC. *(Done on `LoreClient`: provision (RepositoryCreate), list revisions/branches, browse tree, read blob — via tonic against `loreserver`, partition routed by the `lore-partition-bin` header. TODO: diff, locks, links, obliteration two-phase, metadata read/write; tree/blob sizes need a storage call.)*
+- [~] Pin and document the exact Lore server version; integration tests against a real `loreserver`. *(Done: `tests/live_grpc.rs` (ignored) verifies provision + branch/revision reads against a running server. TODO: pin version in Compose + run in CI.)*
 - [x] Ship a **conformance-tested fake** (`FakeLoreBackend`) implementing the same trait with deterministic arena data; shared `assert_conformance` suite runs against it and is ready to re-run against a real server.
 
 ### 24.5 Worker & CI
@@ -1262,8 +1262,8 @@ API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts`
 - [ ] Cross-cutting: pagination, filtering, rate limiting, request IDs, consistent error envelope, OpenAPI spec
 
 ### 30.3 Stubs & demo cruft in the backend (remove or implement)
-- [ ] `packages/lore-client`: real `LoreClient` (`http`) read methods return empty stubs — implement via gRPC (`lore-proto`/tonic) against `loreserver`; keep `FakeLoreBackend` for tests only
-- [ ] Default `LORE_BACKEND=fake` → flip to `http` once gRPC lands; fake must not be the production default
+- [x] `packages/lore-client`: real `LoreClient` (`http`) implemented via gRPC (tonic) against `loreserver` — provision (RepositoryCreate), list branches/revisions (Repository/RevisionService), browse tree / read blob (ThinClientService); partition routed via the `lore-partition-bin` metadata header. Bindings vendored from `lore-proto/src/grpc` (4 self-contained modules; no `protoc`/`lore-base`). `FakeLoreBackend` kept for tests only. Verified live (`tests/live_grpc.rs`). *(TODO: diff, locks, links, obliteration two-phase, metadata read/write; tree/blob sizes need a storage call.)*
+- [x] Default `LORE_BACKEND=http` (gRPC, `LORE_SERVER_URL=http://127.0.0.1:41337`); `fake` is opt-in for offline dev/tests and never the default
 - [ ] `apps/worker`: `run_demo` with hardcoded `acme/demo`/`run-107` → real Redis-backed queue + CI runner picking up real pipeline rows
 - [ ] `routes/pipelines.rs`: `demo_lines()` hardcoded log stream → stream real runner logs
 

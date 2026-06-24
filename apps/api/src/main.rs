@@ -35,13 +35,17 @@ async fn main() -> anyhow::Result<()> {
     sqlx::migrate!("../../migrations").run(&pool).await?;
 
     let lore_client: Arc<dyn LoreBackend> = match config.lore_backend.as_str() {
+        "fake" => {
+            tracing::warn!("LORE_BACKEND=fake: using the in-process test backend (not for production)");
+            Arc::new(FakeLoreBackend::new())
+        }
         "http" => {
-            tracing::info!(url = %config.lore_server_url, "using http lore backend");
+            tracing::info!(url = %config.lore_server_url, "using gRPC lore backend");
             Arc::new(LoreClient::new(config.lore_server_url.clone()))
         }
-        _ => {
-            tracing::info!("using in-process fake lore backend");
-            Arc::new(FakeLoreBackend::new())
+        other => {
+            tracing::warn!(backend = %other, "unknown LORE_BACKEND; defaulting to gRPC lore backend");
+            Arc::new(LoreClient::new(config.lore_server_url.clone()))
         }
     };
 

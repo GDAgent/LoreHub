@@ -18,7 +18,7 @@ workflow once you're running.
 | `apps/worker` | Background worker / CI runner |
 | `apps/web` | Next.js 15 (App Router) frontend + design system (`app/globals.css`) |
 | `packages/db-types` | Shared SQLx row structs |
-| `packages/lore-client` | Lore transport seam: `LoreBackend` trait, `LoreClient` (real), `FakeLoreBackend` (tests) |
+| `packages/lore-client` | Lore transport seam: `LoreBackend` trait, `LoreClient` (real gRPC to `loreserver`; vendored tonic bindings in `src/proto/`), `FakeLoreBackend` (dev/tests) |
 | `migrations/` | Single SQL schema baseline (auto-applied by the API at startup) |
 | `scripts/seed.sql` | Dev-only sample data (never auto-applied) |
 
