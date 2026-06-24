@@ -1154,7 +1154,7 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [x] Define the transport seam behind a stable trait: `LoreBackend` (async-trait, `Send + Sync`, dyn-compatible) with provisioning + read methods and serde-able data types (`LoreRevision`, `LoreBranch`, `LoreTreeEntry`, `LoreBlob`).
 - [x] Implement the operations over real gRPC. *(Done on `LoreClient`: provision (RepositoryCreate), list revisions/branches, browse tree, read blob — via tonic against `loreserver`, partition routed by the `lore-partition-bin` header. TODO: diff, locks, links, obliteration two-phase, metadata read/write; tree/blob sizes need a storage call.)*
 - [~] Pin and document the exact Lore server version; integration tests against a real `loreserver`. *(Done: `tests/live_grpc.rs` (ignored) verifies provision + branch/revision reads against a running server. TODO: pin version in Compose + run in CI.)*
-- [x] Ship a **conformance-tested fake** (`FakeLoreBackend`) implementing the same trait with deterministic arena data; shared `assert_conformance` suite runs against it and is ready to re-run against a real server.
+- [x] ~~Conformance-tested fake (`FakeLoreBackend`)~~ **removed** — the gRPC `LoreClient` is the sole `LoreBackend`; there is no in-process/offline fallback. Unit tests now cover the production client (partition sizing, classification) and live conformance runs against a real server.
 
 ### 24.5 Worker & CI
 - [ ] Real task queue (Redis-backed) with retry/timeout/idempotency.
@@ -1162,8 +1162,8 @@ Goal: stop looking like a prototype; match the polish and information density of
 - [ ] Search indexing (Meilisearch), email/webhook dispatch, storage-analytics computation, obliteration execution.
 
 ### 24.6 Frontend ↔ backend wiring
-- [~] Typed API client (`apps/web/lib/api.ts`) + data layer (`lib/repo-data.ts`) with **live-then-demo fallback**; issues list + detail now render live API data (verified end-to-end: DB-only issue renders in the browser; demo fallback when API down), with a live/demo source indicator. *(TODO: wire CRs/branches/locks — needs `cr_labels` + approvals in the API; introduce React Query for client-side cache; remaining pages page-by-page.)*
-- [ ] Mutations with optimistic UI + toasts; auth-gated routes; real session state. *(Issue create/comment/close persist via API endpoints today; web forms still use GET-based optimistic previews — upgrade to server actions next.)*
+- [~] Typed API client (`apps/web/lib/api.ts`) + **live-only** data layer (`lib/repo-data.ts`): no demo fallback — reads return empty/`null` (honest empty state) when the API is down. Wired live: issues, CRs, branches, locks, teams, org/repo settings, and the Lore code-browsing pages (repo home, revisions, tree, diff). *(TODO: assets/analytics/pipelines/dashboard/notifications/enterprise still on `demo-*.ts`; consider React Query for client-side cache.)*
+- [~] Mutations via Next.js **server actions** (issues + CRs persist through the API). *(TODO: optimistic UI + toasts; auth-gated routes + real session/current-user; CSRF; repo-create + lock/branch mutations.)*
 
 ---
 
@@ -1231,9 +1231,9 @@ This is the order that maximizes felt progress while de-risking the hard parts:
 
 ---
 
-## 30. Production Readiness Gap Audit (2026-06-23)
+## 30. Production Readiness Gap Audit (updated 2026-06-24)
 
-State of the world: the full stack runs and is verified live (Postgres → API → Next.js web; a real `loreserver` 0.8.4 builds & runs). Auth, issues (list/detail/create), and read endpoints for CRs/branches/locks/labels are real. **Everything below is what still stands between this and a no-demo, no-stub, enterprise-shippable product.** (Pre-release: no back-compat, no data migrations, no deprecated shims.)
+State of the world: the full stack runs and is verified live (Postgres → API → Next.js web; a real `loreserver` 0.8.4 builds & runs). Auth, issues (list/detail/create), CRs, branches/locks/labels, org/team/repo settings, and the **Lore read path (revisions/tree/blob over gRPC)** are real. The in-process fake Lore backend has been **removed**: the API always talks to a real `loreserver`. **Everything below is what still stands between this and a no-demo, no-stub, enterprise-shippable product.** (Pre-release: no back-compat, no data migrations, no deprecated shims.)
 
 ### 30.1 Frontend still demo-backed (wire to API, then delete `demo-*.ts`)
 Live today: **collaboration vertical fully wired** — issues list/detail/create/comment/close and
@@ -1243,18 +1243,19 @@ API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts`
 - [x] **Branches** + **locks** lists wired live (read-only; create/unlock are Lore writes → §30.3)
 - [x] **Teams** (list + create) and **org settings** (profile + members table) wired live
 - [x] **Repo settings** wired live — general form + PATCH (display name, description, visibility, default branch, required approvals), branch protection from `required_approvals`, live collaborators/teams tables, archive toggle, obliterate link; role-capabilities matrix is inline RBAC reference
-- [ ] Repo home, code tree/file viewer, revisions list/detail, diff — `demo-repository.ts` (needs Lore gRPC §30.3)
+- [x] **Repo home, code tree/file viewer, revisions list + detail, diff** wired to the live Lore read path (`getRevisions`/`getRevision`/`getTree`/`getBlob`). Honest empty states when nothing is pushed. **Caveats:** file *content* and *diffs* aren't served by the read API yet (tree shows blob metadata only; diff shows a "browse each snapshot" state); revisions carry no per-revision file/line stats or branch tags (the backend doesn't expose them); the revision-graph DAG sidebar was dropped (no layout data) — `lib/dag.ts` + `d3-shape` removed
 - [ ] Pipelines list + run detail — `demo-pipelines.ts` (needs runner §30.3)
-- [ ] Assets browser/detail, binary-diff, analytics, obliterate — `demo-assets.ts` (needs Lore gRPC §30.3)
-- [ ] Dashboard, notifications — `demo-collaboration.ts` (need web auth/current-user → §30 auth)
+- [ ] Assets browser/detail, binary-diff, analytics, obliterate — `demo-assets.ts`/`demo-repository.ts` (needs Lore asset/storage RPCs §30.3)
+- [ ] Dashboard, notifications — `demo-collaboration.ts`/`demo-repository.ts` (need web auth/current-user → §30 auth)
 - [ ] Admin + enterprise (SSO, directory, audit, SLA, billing), SSO handoff — `demo-enterprise.ts`
-- [ ] **Then:** delete all `demo-*.ts` (remaining `demo-collaboration` importers: dashboard, notifications, obliterate — all gated on Lore/auth).
+- [ ] **Then:** delete the remaining `demo-*.ts`. Still imported by: assets/analytics/binary-diff (`demo-assets`, `demo-repository`), dashboard/notifications (`demo-collaboration`, `demo-repository`), admin/enterprise/sso (`demo-enterprise`) — all gated on Lore asset RPCs or web auth.
 
 ### 30.2 API endpoints still missing
 - [x] Orgs/teams/members: `GET /orgs/{org}`, `/orgs/{org}/members`, `/orgs/{org}/teams` (+ team create); repo settings `GET`/`PATCH /orgs/{org}/repos/{repo}` + `/collaborators` done. Repo **create** via UI still missing
 - [x] CR detail (reviews, reviewers, comments, grouped inline threads, approvals, merge gate); issue + CR **mutations** (create/comment/state, CR review/comment/inline/merge with approval gate)
 - [ ] Lock/branch mutations; label assignment; milestones; assignees
-- [ ] Tree/blob/diff (Lore-backed); revisions list/detail
+- [x] Revisions list + tree browse + blob metadata (Lore-backed): `GET /orgs/{org}/repos/{repo}/revisions`, `/tree/{revision}?path=`, `/blob/{revision}?path=`
+- [ ] Blob **content** bytes; file/tree **diff** RPC; revision detail enrichment (file/line stats)
 - [ ] Pipelines (runs, jobs, artifacts) — replace the hardcoded WS demo log stream in `routes/pipelines.rs`
 - [ ] Assets + storage analytics (real dedup/chunk stats)
 - [ ] Notifications; obliteration request workflow
@@ -1262,8 +1263,8 @@ API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts`
 - [ ] Cross-cutting: pagination, filtering, rate limiting, request IDs, consistent error envelope, OpenAPI spec
 
 ### 30.3 Stubs & demo cruft in the backend (remove or implement)
-- [x] `packages/lore-client`: real `LoreClient` (`http`) implemented via gRPC (tonic) against `loreserver` — provision (RepositoryCreate), list branches/revisions (Repository/RevisionService), browse tree / read blob (ThinClientService); partition routed via the `lore-partition-bin` metadata header. Bindings vendored from `lore-proto/src/grpc` (4 self-contained modules; no `protoc`/`lore-base`). `FakeLoreBackend` kept for tests only. Verified live (`tests/live_grpc.rs`). *(TODO: diff, locks, links, obliteration two-phase, metadata read/write; tree/blob sizes need a storage call.)*
-- [x] Default `LORE_BACKEND=http` (gRPC, `LORE_SERVER_URL=http://127.0.0.1:41337`); `fake` is opt-in for offline dev/tests and never the default
+- [x] `packages/lore-client`: real `LoreClient` implemented via gRPC (tonic) against `loreserver` — provision (RepositoryCreate), list branches/revisions (Repository/RevisionService), browse tree / read blob (ThinClientService); partition routed via the `lore-partition-bin` metadata header. Bindings vendored from `lore-proto/src/grpc` (4 self-contained modules; no `protoc`/`lore-base`). Verified live (`tests/live_grpc.rs`). *(TODO: diff, locks, links, obliteration two-phase, metadata read/write, blob content bytes; tree/blob sizes need a storage call.)*
+- [x] **`FakeLoreBackend` removed entirely** — the gRPC client is the sole `LoreBackend`. The `LORE_BACKEND` env switch is gone; the API always uses `LORE_SERVER_URL` (default `http://127.0.0.1:41337`). No in-process/offline fallback.
 - [ ] `apps/worker`: `run_demo` with hardcoded `acme/demo`/`run-107` → real Redis-backed queue + CI runner picking up real pipeline rows
 - [ ] `routes/pipelines.rs`: `demo_lines()` hardcoded log stream → stream real runner logs
 
@@ -1280,4 +1281,28 @@ API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts`
 - [ ] Security pass (secret handling, authz, dependency audit); a11y audit; perf budgets
 
 ### 30.6 Short overview (what's left, in one breath)
-Real & done: design system + all pages (UI), DB schema, auth/sessions, issues end-to-end, Lore trait + fake, infra-that-boots. Left: **wire 27 pages to live data and delete demo modules+fallback**, **fill the missing API surface + mutations**, **implement the real gRPC Lore backend + Redis worker/CI (remove stubs)**, **harden authz/CSRF/tokens**, and **CI + tests + docs + deploy validation**.
+Real & done: design system + all pages (UI), DB schema, auth/sessions, issues + CRs end-to-end, org/team/repo settings, **real gRPC Lore backend (fake removed)** with repo home/tree/revisions/diff wired to it, infra-that-boots. Left: **wire the remaining demo pages (assets/analytics/pipelines/dashboard/notifications/enterprise) and delete `demo-*.ts`**, **fill the missing API surface + mutations (incl. blob content, diff, repo-create)**, **real Redis worker/CI (remove stubs)**, **harden authz/CSRF/tokens**, and **CI + tests + security/a11y/perf + deploy validation**.
+
+### 30.7 Production-readiness verdict (as a GitHub/GitLab-for-Lore competitor)
+
+**Overall: a credible, runnable alpha — not yet production-shippable.** The architecture, data model, and the hardest integration (a real gRPC path to `loreserver`) are proven. What remains is breadth (finish the verticals), enforcement (authz/CSRF/tokens), and operational hardening (CI/tests/deploy). Honest estimate: **~55–60%** of the way to a 1.0 a team could self-host for real work.
+
+**Production-ready now (real, verified):**
+- Identity & collaboration core: register/login/sessions; issues and change requests fully end-to-end (create/comment/state/review/inline/merge-gate); org/team/repo settings and collaborators.
+- Lore VCS read integration: provision a repo partition, list branches/revisions, browse the tree, read blob metadata — over real gRPC against `loreserver`, no fake/fallback.
+- Schema-first Postgres, single baseline migration auto-applied; design system + all page shells.
+
+**Not yet — the gaps that block "shippable":**
+1. **Lore write/rich-read path.** No blob *content* bytes, no file/tree *diff*, no lock/branch/link mutations, no obliteration two-phase, no real dedup/storage analytics. The product can *show* a repo's history and shape but can't yet display file contents or diffs, or push/lock from the web. This is the single biggest gap for a VCS host.
+2. **Authz & security.** RBAC is not enforced server-side on mutations; mutations persist with a NULL author (no current-user wiring); no CSRF protection; no API-token issue/list/revoke; Lore JWT minting not yet tied to loreserver JWKS. **Must-fix before any multi-user deployment.**
+3. **CI/CD vertical.** Worker is a `run_demo` stub and pipeline logs are a hardcoded stream — there is no real queue or runner. "Actions/Pipelines" is non-functional.
+4. **Remaining demo pages.** Assets/binary-diff/analytics, pipelines, dashboard/notifications, and all enterprise/SSO screens still read `demo-*.ts`. They render but aren't real.
+5. **Operational hardening.** No LoreHub CI (build/test/lint/clippy/typecheck), no automated tests (unit/e2e/integration), no security/a11y/perf passes, compose/Helm not validated end-to-end, no pagination/rate-limiting/OpenAPI.
+
+**Caveats / known constraints:**
+- Tree and blob **sizes are reported as 0** until a Lore storage call is added (`Address` carries no size).
+- `loreserver` runs zero-config with **auth disabled** locally; production needs real auth + TLS/cert posture (gRPC currently plaintext h2c).
+- A freshly-seeded demo repo has a placeholder partition id with **no backing content**, so Lore pages show empty states locally until content is pushed via the `lore` client (CLI not currently built).
+- Pre-1.0: no back-compat, no data migrations — the schema baseline is edited in place and the DB recreated.
+
+**Path to 1.0 (highest leverage first):** (1) blob content + diff RPCs and finish the code-browsing vertical; (2) server-side RBAC + current-user wiring + CSRF + API tokens; (3) real worker/CI; (4) migrate & delete remaining demo pages; (5) CI + tests + security/a11y/perf + deploy validation.
