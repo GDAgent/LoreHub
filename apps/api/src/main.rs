@@ -7,7 +7,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum::Router;
 use config::Config;
-use lore_client::{FakeLoreBackend, LoreBackend, LoreClient};
+use lore_client::{LoreBackend, LoreClient};
 use sqlx::postgres::PgPoolOptions;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -34,20 +34,9 @@ async fn main() -> anyhow::Result<()> {
 
     sqlx::migrate!("../../migrations").run(&pool).await?;
 
-    let lore_client: Arc<dyn LoreBackend> = match config.lore_backend.as_str() {
-        "fake" => {
-            tracing::warn!("LORE_BACKEND=fake: using the in-process test backend (not for production)");
-            Arc::new(FakeLoreBackend::new())
-        }
-        "http" => {
-            tracing::info!(url = %config.lore_server_url, "using gRPC lore backend");
-            Arc::new(LoreClient::new(config.lore_server_url.clone()))
-        }
-        other => {
-            tracing::warn!(backend = %other, "unknown LORE_BACKEND; defaulting to gRPC lore backend");
-            Arc::new(LoreClient::new(config.lore_server_url.clone()))
-        }
-    };
+    tracing::info!(url = %config.lore_server_url, "using gRPC lore backend");
+    let lore_client: Arc<dyn LoreBackend> =
+        Arc::new(LoreClient::new(config.lore_server_url.clone()));
 
     let app_state = AppState {
         pool,

@@ -19,17 +19,17 @@ docker compose -f infra/compose/docker-compose.yml up --build
 
 ### Lore backend
 
-By default the stack runs with `LORE_BACKEND=fake` (in-process), so it boots with
-no external Lore server. To run a real `loreserver`:
+The API talks to a real `loreserver` over gRPC (set `LORE_SERVER_URL`); there is
+no in-process fallback. Start one alongside the stack:
 
 ```bash
 # build/publish a loreserver image, set LORE_SERVER_IMAGE in .env, then:
-LORE_BACKEND=http docker compose -f infra/compose/docker-compose.yml --profile lore up
+docker compose -f infra/compose/docker-compose.yml --profile lore up
 ```
 
 > There is no public `loreserver` image yet; build one from the
-> [Lore](https://github.com/EpicGames/lore) repo. Real gRPC wiring of the Lore
-> read path is in progress (`PLAN.md` §30.3).
+> [Lore](https://github.com/EpicGames/lore) repo. The Lore gRPC read path
+> (provision, branches, revisions, tree, blob) is implemented (`PLAN.md` §30.3).
 
 ## Helm (Kubernetes)
 
@@ -51,5 +51,5 @@ shared `lorehub-cloud` module. Validate against your own accounts before use.
 - [ ] Set a strong `LORE_JWT_SECRET` and per-deployment secrets (never the dev defaults)
 - [ ] Managed/persistent Postgres with backups
 - [ ] TLS/ingress in front of api + web
-- [ ] `LORE_BACKEND=http` with a real loreserver once gRPC wiring lands
+- [ ] `LORE_SERVER_URL` pointing at a reachable loreserver
 - [ ] Do **not** load `scripts/seed.sql` — production starts empty

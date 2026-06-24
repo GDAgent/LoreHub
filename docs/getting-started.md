@@ -40,8 +40,7 @@ The defaults match the Postgres above. Key variables:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | `postgres://postgres:postgres@localhost:5432/lorehub` | API database |
-| `LORE_BACKEND` | `http` | `http` (real loreserver over gRPC; default) or `fake` (in-process, dev/tests only) |
-| `LORE_SERVER_URL` | `http://127.0.0.1:41337` | loreserver gRPC address when `LORE_BACKEND=http` |
+| `LORE_SERVER_URL` | `http://127.0.0.1:41337` | loreserver gRPC address (the API always talks to a real loreserver) |
 | `LORE_JWT_SECRET` | dev value | **Change in any non-local environment** |
 | `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | API base the web app calls |
 
@@ -81,20 +80,20 @@ npm run dev:web      # http://localhost:3000
 Open <http://localhost:3000/acme/demo/issues> — issues render from the live API
 (pages show a small `live`/`demo` indicator depending on whether the API answered).
 
-## 6. (Optional) A real Lore server
+## 6. Run a Lore server
 
-Pages that need Lore data (tree/revisions/diff) use the in-process fake by
-default. To run a real one, build it from the [Lore](https://github.com/EpicGames/lore)
-checkout and point LoreHub at it:
+Pages that need Lore data (tree/revisions/diff) read from a real `loreserver`
+over gRPC — there is no in-process fallback. Build it from the
+[Lore](https://github.com/EpicGames/lore) checkout and run it:
 
 ```bash
 # in the lore repo
 cargo build -p lore-server
 ./target/debug/loreserver          # gRPC+QUIC :41337, HTTP :41339
 
-# lorehub defaults to LORE_BACKEND=http / LORE_SERVER_URL=http://127.0.0.1:41337,
-# so the API talks to a local loreserver out of the box. Set LORE_BACKEND=fake
-# for offline dev (in-process backend, no server).
+# lorehub defaults to LORE_SERVER_URL=http://127.0.0.1:41337, so the API talks
+# to a local loreserver out of the box. Repos with no pushed content show
+# honest empty states until content is pushed via the lore client.
 ```
 
 > The gRPC read path (provision + branches/revisions/tree/blob) is implemented;
