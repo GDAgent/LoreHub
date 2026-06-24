@@ -2,15 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import {
-  formatBytes,
-  getBreadcrumbs,
-  getDemoNode,
-  getLatestRevision,
-  getRevisionTreeLink,
-  listTreeEntries,
-} from "@/lib/demo-repository";
-import { highlightCode } from "@/lib/highlight";
+import { formatBytes } from "@/lib/format";
+import { getBlob, getRevisions, getTree } from "@/lib/repo-data";
 
 type TreePageProps = {
   params: Promise<{
@@ -38,19 +31,33 @@ function FileIcon() {
   );
 }
 
+function breadcrumbsFor(path: string) {
+  const segments = path.split("/").filter(Boolean);
+  return segments.map((label, index) => ({
+    label,
+    path: segments.slice(0, index + 1).join("/"),
+  }));
+}
+
 export default async function TreePage({ params }: TreePageProps) {
   const { org, repo, revision, path } = await params;
-  const activeRevision = revision === "latest" ? getLatestRevision()?.hash ?? revision : revision;
-  const currentPath = path?.join("/") ?? "";
-  const node = getDemoNode(activeRevision, currentPath);
 
-  if (!node) {
+  let activeRevision = revision;
+  if (revision === "latest") {
+    const revisions = await getRevisions(org, repo);
+    activeRevision = revisions[0]?.hash ?? revision;
+  }
+
+  const currentPath = path?.join("/") ?? "";
+  const entries = await getTree(org, repo, activeRevision, currentPath);
+  const blob = entries.length === 0 && currentPath ? await getBlob(org, repo, activeRevision, currentPath) : null;
+  const isDirectory = currentPath === "" || entries.length > 0;
+
+  if (!isDirectory && !blob) {
     notFound();
   }
 
-  const breadcrumbs = getBreadcrumbs(currentPath);
-  const entries = node.kind === "directory" ? listTreeEntries(activeRevision, currentPath) : [];
-  const highlightedCode = node.kind === "text" ? await highlightCode(node.content, node.language) : null;
+  const breadcrumbs = breadcrumbsFor(currentPath);
   const fileName = breadcrumbs[breadcrumbs.length - 1]?.label ?? repo;
 
   return (
@@ -66,7 +73,7 @@ export default async function TreePage({ params }: TreePageProps) {
         <div className="breadcrumbs">
           <Link href={`/${org}/${repo}/tree/${activeRevision}`}>{repo}</Link>
           {breadcrumbs.map((crumb) => (
-            <Link key={crumb.path} href={`/${org}/${repo}/${getRevisionTreeLink(activeRevision, crumb.path)}`}>
+            <Link key={crumb.path} href={`/${org}/${repo}/tree/${activeRevision}/${crumb.path}`}>
               {crumb.label}
             </Link>
           ))}
@@ -74,55 +81,46 @@ export default async function TreePage({ params }: TreePageProps) {
         <span className="pill muted-pill">revision <code style={{ fontSize: "0.85em" }}>{activeRevision.slice(0, 7)}</code></span>
       </div>
 
-      {node.kind === "directory" ? (
-        <section className="panel" style={{ padding: 0, overflow: "hidden" }}>
-          <table className="table">
-            <tbody>
-              {entries.map((entry) => {
-                const href = `/${org}/${repo}/${getRevisionTreeLink(activeRevision, entry.path)}`;
-                const isDir = entry.kind === "directory";
-                return (
-                  <tr key={entry.path}>
-                    <td style={{ width: "1.5rem" }}>{isDir ? <FolderIcon /> : <FileIcon />}</td>
-                    <td><Link href={href}>{entry.name}</Link></td>
-                    <td className="muted" style={{ textAlign: "right" }}>
-                      {entry.size ? formatBytes(entry.size) : entry.language ?? entry.mimeType ?? (isDir ? "—" : "")}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </section>
-      ) : node.kind === "text" ? (
-        <section className="panel" style={{ padding: 0, overflow: "hidden" }}>
-          <div className="code-header" style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)" }}>
-            <div className="meta-row">
-              <strong>{fileName}</strong>
-              <span className="pill muted-pill">{node.language.toUpperCase()}</span>
-              <span className="muted" style={{ fontSize: "0.85rem" }}>{formatBytes(node.size)}</span>
-            </div>
-            <div className="meta-row">
-              <button className="button-secondary" type="button">Copy</button>
-              <button className="button-secondary" type="button">Raw</button>
-            </div>
-          </div>
-          <div className="code-highlight" dangerouslySetInnerHTML={{ __html: highlightedCode ?? "" }} />
-        </section>
+      {isDirectory ? (
+        entries.length > 0 ? (
+          <section className="panel" style={{ padding: 0, overflow: "hidden" }}>
+            <table className="table">
+              <tbody>
+                {entries.map((entry) => {
+                  const isDir = entry.kind === "directory";
+                  return (
+                    <tr key={entry.path}>
+                      <td style={{ width: "1.5rem" }}>{isDir ? <FolderIcon /> : <FileIcon />}</td>
+                      <td><Link href={`/${org}/${repo}/tree/${activeRevision}/${entry.path}`}>{entry.name}</Link></td>
+                      <td className="muted" style={{ textAlign: "right" }}>
+                        {entry.size ? formatBytes(entry.size) : isDir ? "—" : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </section>
+        ) : (
+          <section className="panel empty-state">
+            <p className="muted" style={{ margin: 0 }}>
+              This revision has no content. Push files with the Lore client to populate the tree.
+            </p>
+          </section>
+        )
       ) : (
         <section className="panel">
           <div className="section-header">
             <h2 style={{ marginTop: 0 }}>{fileName}</h2>
-            <span className="pill">Binary asset</span>
+            <span className="pill">{blob?.isBinary ? "Binary asset" : "File"}</span>
           </div>
-          <p className="muted">{node.description}</p>
           <div className="metadata-list" style={{ maxWidth: "420px" }}>
-            <div className="metadata-row"><span className="muted">Type</span><strong>{node.mimeType}</strong></div>
-            <div className="metadata-row"><span className="muted">Size</span><strong>{formatBytes(node.size)}</strong></div>
+            <div className="metadata-row"><span className="muted">Type</span><strong>{blob?.mimeType}</strong></div>
+            <div className="metadata-row"><span className="muted">Size</span><strong>{blob ? formatBytes(blob.size) : "—"}</strong></div>
           </div>
           <p className="muted" style={{ fontSize: "0.88rem" }}>
-            Browse rich previews and dedup metadata for textures, audio, models, and video in the{" "}
-            <Link className="inline-link" href={`/${org}/${repo}/assets`}>asset browser</Link>.
+            File content preview isn&apos;t served over the read API yet — only Lore
+            metadata (type, size) is available here.
           </p>
         </section>
       )}

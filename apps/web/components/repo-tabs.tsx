@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { demoRevisions } from "@/lib/demo-repository";
-
 type RepoTab =
   | "code"
   | "revisions"
@@ -20,10 +18,8 @@ type RepoTabsProps = {
   active: RepoTab;
 };
 
-const head = demoRevisions[0]?.hash ?? "main";
-
 const tabs: { id: RepoTab; label: string; href: (org: string, repo: string) => string }[] = [
-  { id: "code", label: "Code", href: (o, r) => `/${o}/${r}/tree/${head}` },
+  { id: "code", label: "Code", href: (o, r) => `/${o}/${r}` },
   { id: "revisions", label: "Revisions", href: (o, r) => `/${o}/${r}/revisions` },
   { id: "branches", label: "Branches", href: (o, r) => `/${o}/${r}/branches` },
   { id: "issues", label: "Issues", href: (o, r) => `/${o}/${r}/issues` },

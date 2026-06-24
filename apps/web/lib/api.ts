@@ -222,3 +222,25 @@ export type ApiLock = {
   note: string | null;
   acquired_at: string;
 };
+
+export type ApiRevision = {
+  hash: string;
+  parents: string[];
+  message: string;
+  author: string;
+  timestamp_unix: number;
+};
+
+export type ApiTreeEntry = {
+  name: string;
+  path: string;
+  kind: "directory" | "file";
+  size: number;
+};
+
+export type ApiBlob = {
+  path: string;
+  mime_type: string;
+  size: number;
+  is_binary: boolean;
+};

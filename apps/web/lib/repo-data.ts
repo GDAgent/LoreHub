@@ -8,12 +8,15 @@
 
 import {
   apiGet,
+  type ApiBlob,
   type ApiBranch,
   type ApiChangeRequestDetail,
   type ApiChangeRequestListItem,
   type ApiIssueDetail,
   type ApiIssueListItem,
   type ApiLock,
+  type ApiRevision,
+  type ApiTreeEntry,
 } from "@/lib/api";
 
 export type IssueRow = {
@@ -109,6 +112,43 @@ export type LockRow = {
   note: string | null;
   acquiredAt: string;
 };
+
+export type RevisionRow = {
+  hash: string;
+  shortHash: string;
+  message: string;
+  author: string;
+  authoredAt: string;
+  parents: string[];
+};
+
+export type TreeEntryRow = {
+  kind: "directory" | "file";
+  name: string;
+  path: string;
+  size: number;
+};
+
+export type BlobMeta = {
+  path: string;
+  mimeType: string;
+  size: number;
+  isBinary: boolean;
+};
+
+function toRevisionRow(revision: ApiRevision): RevisionRow {
+  return {
+    hash: revision.hash,
+    shortHash: revision.hash.slice(0, 12),
+    message: revision.message,
+    author: revision.author,
+    authoredAt:
+      revision.timestamp_unix > 0
+        ? new Date(revision.timestamp_unix * 1000).toISOString()
+        : "",
+    parents: revision.parents,
+  };
+}
 
 function encode(org: string, repo: string) {
   return `${encodeURIComponent(org)}/repos/${encodeURIComponent(repo)}`;
@@ -257,4 +297,70 @@ export async function getLocks(org: string, repo: string): Promise<LockRow[]> {
     note: lock.note,
     acquiredAt: lock.acquired_at,
   }));
+}
+
+export async function getRevisions(org: string, repo: string): Promise<RevisionRow[]> {
+  const live = await apiGet<ApiRevision[]>(`/api/v1/orgs/${encode(org, repo)}/revisions`);
+  if (!live) {
+    return [];
+  }
+  return live.map(toRevisionRow);
+}
+
+export async function getRevision(
+  org: string,
+  repo: string,
+  hash: string,
+): Promise<RevisionRow | null> {
+  const revisions = await getRevisions(org, repo);
+  return revisions.find((revision) => revision.hash === hash) ?? null;
+}
+
+export async function getTree(
+  org: string,
+  repo: string,
+  revision: string,
+  path = "",
+): Promise<TreeEntryRow[]> {
+  const query = path ? `?path=${encodeURIComponent(path)}` : "";
+  const live = await apiGet<ApiTreeEntry[]>(
+    `/api/v1/orgs/${encode(org, repo)}/tree/${encodeURIComponent(revision)}${query}`,
+  );
+  if (!live) {
+    return [];
+  }
+  return live
+    .map((entry) => ({
+      kind: entry.kind,
+      name: entry.name,
+      path: entry.path,
+      size: entry.size,
+    }))
+    .sort((left, right) => {
+      if (left.kind !== right.kind) {
+        return left.kind === "directory" ? -1 : 1;
+      }
+      return left.name.localeCompare(right.name);
+    });
+}
+
+export async function getBlob(
+  org: string,
+  repo: string,
+  revision: string,
+  path: string,
+): Promise<BlobMeta | null> {
+  const query = path ? `?path=${encodeURIComponent(path)}` : "";
+  const live = await apiGet<ApiBlob>(
+    `/api/v1/orgs/${encode(org, repo)}/blob/${encodeURIComponent(revision)}${query}`,
+  );
+  if (!live) {
+    return null;
+  }
+  return {
+    path: live.path,
+    mimeType: live.mime_type,
+    size: live.size,
+    isBinary: live.is_binary,
+  };
 }

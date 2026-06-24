@@ -1,14 +1,9 @@
 import Link from "next/link";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { RichText } from "@/lib/render-rich-text";
-import {
-  demoBranches,
-  demoRevisions,
-  formatBytes,
-  getDemoNode,
-  listTreeEntries,
-} from "@/lib/demo-repository";
+import { formatBytes } from "@/lib/format";
+import { getBranches, getRevisions, getTree } from "@/lib/repo-data";
+import { getRepoSettings } from "@/lib/repo-settings-data";
 
 type RepositoryPageProps = {
   params: Promise<{
@@ -19,11 +14,18 @@ type RepositoryPageProps = {
 
 export default async function RepositoryPage({ params }: RepositoryPageProps) {
   const { org, repo } = await params;
-  const head = demoRevisions[0];
-  const entries = listTreeEntries(head.hash, "");
-  const readmeNode = getDemoNode(head.hash, "README.md");
-  const readme = readmeNode?.kind === "text" ? readmeNode.content : null;
-  const defaultBranch = demoBranches.find((branch) => branch.isDefault) ?? demoBranches[0];
+
+  const [settings, branches, revisions] = await Promise.all([
+    getRepoSettings(org, repo),
+    getBranches(org, repo),
+    getRevisions(org, repo),
+  ]);
+
+  const defaultBranch =
+    branches.find((branch) => branch.isDefault) ?? branches[0] ?? null;
+  const head = revisions[0] ?? null;
+  const entries = head ? await getTree(org, repo, head.hash, "") : [];
+  const visibility = settings?.visibility ?? "private";
 
   return (
     <main className="shell page">
@@ -32,12 +34,15 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
           <div>
             <div className="repo-path">
               <Link href={`/${org}`}>{org}</Link> / <strong>{repo}</strong>{" "}
-              <span className="pill">Public</span>
+              <span className="pill">
+                {visibility.charAt(0).toUpperCase() + visibility.slice(1)}
+              </span>
             </div>
-            <p className="muted top-gap-sm" style={{ maxWidth: "70ch" }}>
-              Binary-first sample project for validating revision browsing, asset review, change
-              requests, and CI on top of Lore.
-            </p>
+            {settings?.description ? (
+              <p className="muted top-gap-sm" style={{ maxWidth: "70ch" }}>
+                {settings.description}
+              </p>
+            ) : null}
           </div>
           <div className="meta-row">
             <button className="button-secondary" type="button">★ Star</button>
@@ -51,81 +56,66 @@ export default async function RepositoryPage({ params }: RepositoryPageProps) {
       <div className="repo-home-grid">
         <div style={{ display: "grid", gap: "1rem" }}>
           <div className="panel" style={{ padding: 0 }}>
-            <div className="meta-row" style={{ justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-muted)" }}>
-              <span className="meta-row">
-                <span className="avatar-button" style={{ width: 24, height: 24, fontSize: "0.7rem" }} aria-hidden="true">M</span>
-                <strong>{head.author}</strong>
-                <span className="muted">{head.title}</span>
-              </span>
-              <Link className="muted" href={`/${org}/${repo}/revisions/${head.hash}`} style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
-                {head.shortHash}
-              </Link>
-            </div>
-            <div className="entry-table" style={{ border: "none", borderRadius: 0 }}>
-              {entries.map((entry) => (
-                <div key={entry.path} className="entry-row">
-                  <span className="entry-name">
-                    <Link href={
-                      entry.kind === "directory"
-                        ? `/${org}/${repo}/tree/${head.hash}/${entry.path}`
-                        : `/${org}/${repo}/tree/${head.hash}/${entry.path}`
-                    }>
-                      {entry.kind === "directory" ? "📁 " : entry.kind === "binary" ? "📦 " : "📄 "}
-                      {entry.name}
-                    </Link>
-                  </span>
-                  <span className="entry-kind">{entry.kind}</span>
-                  <span className="entry-meta">{entry.size ? formatBytes(entry.size) : "—"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {readme ? (
-            <div className="panel">
-              <div className="meta-row" style={{ justifyContent: "space-between", marginBottom: "0.5rem" }}>
-                <strong>README.md</strong>
+            {head ? (
+              <div className="meta-row" style={{ justifyContent: "space-between", padding: "0.75rem 1rem", borderBottom: "1px solid var(--border-muted)" }}>
+                <span className="meta-row">
+                  <strong>{head.author || "unknown"}</strong>
+                  <span className="muted">{head.message}</span>
+                </span>
+                <Link className="muted" href={`/${org}/${repo}/revisions/${head.hash}`} style={{ fontFamily: "var(--font-mono)", fontSize: "0.82rem" }}>
+                  {head.shortHash}
+                </Link>
               </div>
-              <div className="section-divider" />
-              <RichText org={org} repo={repo} text={readme} />
-            </div>
-          ) : null}
+            ) : null}
+            {entries.length > 0 ? (
+              <div className="entry-table" style={{ border: "none", borderRadius: 0 }}>
+                {entries.map((entry) => (
+                  <div key={entry.path} className="entry-row">
+                    <span className="entry-name">
+                      <Link href={`/${org}/${repo}/tree/${head?.hash}/${entry.path}`}>
+                        {entry.kind === "directory" ? "📁 " : "📄 "}
+                        {entry.name}
+                      </Link>
+                    </span>
+                    <span className="entry-kind">{entry.kind}</span>
+                    <span className="entry-meta">{entry.size ? formatBytes(entry.size) : "—"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state" style={{ padding: "2rem 1rem" }}>
+                <p className="muted" style={{ margin: 0 }}>
+                  No content pushed yet. Push a revision with the Lore client to
+                  populate this repository.
+                </p>
+                <Link className="button-secondary top-gap-sm" href={`/${org}/${repo}/push`}>
+                  Clone / Push instructions
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         <aside style={{ display: "grid", gap: "1rem" }}>
           <div className="panel">
             <h3>About</h3>
             <p className="muted" style={{ fontSize: "0.9rem" }}>
-              Binary-first sample repository on Lore. Browse code, review assets, and run pipelines.
+              Binary-first repository on Lore. Browse code, review assets, and run pipelines.
             </p>
             <div className="metadata-list top-gap-sm">
               <div className="metadata-row">
                 <span className="muted">Default branch</span>
-                <span className="pill">{defaultBranch.name}</span>
+                <span className="pill">{defaultBranch?.name ?? settings?.defaultBranch ?? "—"}</span>
               </div>
               <div className="metadata-row">
                 <span className="muted">Branches</span>
-                <Link href={`/${org}/${repo}/branches`}>{demoBranches.length}</Link>
+                <Link href={`/${org}/${repo}/branches`}>{branches.length}</Link>
               </div>
               <div className="metadata-row">
                 <span className="muted">Revisions</span>
-                <Link href={`/${org}/${repo}/revisions`}>{demoRevisions.length}</Link>
+                <Link href={`/${org}/${repo}/revisions`}>{revisions.length}</Link>
               </div>
             </div>
-          </div>
-
-          <div className="panel">
-            <h3>Storage</h3>
-            <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0 }}>
-              Lore deduplicates fragments across revisions and repositories.
-            </p>
-            <div className="stat top-gap-sm">
-              <strong className="highlight-cell">62% saved</strong>
-              <span className="muted">3.6 GB logical → 1.4 GB stored</span>
-            </div>
-            <Link className="button-secondary top-gap-sm" href={`/${org}/${repo}/analytics`} style={{ width: "100%" }}>
-              View analytics
-            </Link>
           </div>
 
           <div className="panel">

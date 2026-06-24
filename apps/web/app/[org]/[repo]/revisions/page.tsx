@@ -1,9 +1,8 @@
 import Link from "next/link";
 
 import { RepoTabs } from "@/components/repo-tabs";
-import { demoDag, demoRevisions, getRevisionTreeLink } from "@/lib/demo-repository";
-import { getDagLinks } from "@/lib/dag";
 import { formatDateTime } from "@/lib/format";
+import { getRevisions } from "@/lib/repo-data";
 
 type RevisionsPageProps = {
   params: Promise<{
@@ -14,7 +13,7 @@ type RevisionsPageProps = {
 
 export default async function RevisionsPage({ params }: RevisionsPageProps) {
   const { org, repo } = await params;
-  const dagLinks = getDagLinks();
+  const revisions = await getRevisions(org, repo);
 
   return (
     <main className="shell page">
@@ -27,49 +26,36 @@ export default async function RevisionsPage({ params }: RevisionsPageProps) {
 
       <h1 style={{ margin: 0 }}>Revisions</h1>
 
-      <div className="detail-grid">
+      {revisions.length > 0 ? (
         <div className="list-rows">
-          {demoRevisions.map((revision) => (
+          {revisions.map((revision) => (
             <div key={revision.hash} className="list-row">
               <span className="list-row-icon state-open"><CommitIcon /></span>
               <div className="list-row-main">
                 <div className="list-row-title">
-                  <Link href={`/${org}/${repo}/revisions/${revision.hash}`}>{revision.title}</Link>
-                  {revision.branchTags.map((tag) => (
-                    <span key={tag} className="pill muted-pill" style={{ marginLeft: "0.4rem" }}>{tag}</span>
-                  ))}
+                  <Link href={`/${org}/${repo}/revisions/${revision.hash}`}>
+                    {revision.message || revision.shortHash}
+                  </Link>
                 </div>
-                <p className="muted" style={{ margin: "0.25rem 0", fontSize: "0.88rem" }}>{revision.description}</p>
                 <div className="list-row-meta">
                   <code style={{ fontSize: "0.8em" }}>{revision.shortHash}</code>
-                  <span>· {revision.author}</span>
-                  <span>· {formatDateTime(revision.authoredAt)}</span>
-                  <span>· {revision.filesChanged} files</span>
-                  <span style={{ color: "var(--success)" }}>+{revision.insertions}</span>
-                  <span style={{ color: "var(--danger)" }}>−{revision.deletions}</span>
+                  {revision.author ? <span>· {revision.author}</span> : null}
+                  {revision.authoredAt ? <span>· {formatDateTime(revision.authoredAt)}</span> : null}
                 </div>
               </div>
               <div className="meta-row">
-                <Link className="button-secondary" href={`/${org}/${repo}/${getRevisionTreeLink(revision.hash)}`}>Browse</Link>
+                <Link className="button-secondary" href={`/${org}/${repo}/tree/${revision.hash}`}>Browse</Link>
               </div>
             </div>
           ))}
         </div>
-
-        <aside className="panel" style={{ position: "sticky", top: "calc(var(--header-h) + 1rem)" }}>
-          <h3>Revision graph</h3>
-          <p className="muted" style={{ fontSize: "0.85rem", marginTop: 0 }}>Branches, merges, and tags at a glance.</p>
-          <svg className="dag-canvas" viewBox="0 0 340 280" role="img" aria-label="Revision DAG">
-            {dagLinks.map((link) => (link.path ? <path key={link.id} d={link.path} className="dag-line" /> : null))}
-            {demoDag.map((node) => (
-              <g key={node.hash}>
-                <circle cx={node.x} cy={node.y} r="10" className="dag-node" />
-                <text x={node.x + 16} y={node.y + 4} className="dag-label">{node.label}</text>
-              </g>
-            ))}
-          </svg>
-        </aside>
-      </div>
+      ) : (
+        <div className="panel empty-state">
+          <p className="muted" style={{ margin: 0 }}>
+            No revisions yet. Push a revision with the Lore client to see history here.
+          </p>
+        </div>
+      )}
     </main>
   );
 }

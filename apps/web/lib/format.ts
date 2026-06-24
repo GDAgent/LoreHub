@@ -45,6 +45,17 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+/** Human-readable byte size (e.g. `1.4 MB`). */
+export function formatBytes(size: number): string {
+  if (size < 1024) {
+    return `${size} B`;
+  }
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 /** Short relative-ish description from an ISO date. */
 export function formatDate(iso: string): string {
   const date = new Date(iso);
