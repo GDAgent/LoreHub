@@ -67,6 +67,9 @@ Authentication uses an `HttpOnly` session cookie set by the auth endpoints.
 | GET | `/api/v1/orgs/{org}/repos/{repo}/branches` | List branches |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/locks` | List file locks |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/labels` | List labels |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/revisions` | List revisions from Lore (`hash`, `parents`, `message`, `author`, `timestamp_unix`) |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/tree/{revision}` | Browse a revision's tree (`?path=` for a subdirectory); entries carry `name`, `path`, `kind`, `size` |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/blob/{revision}` | Blob metadata at `?path=` (`mime_type`, `size`, `is_binary`) |
 
 ## Pipelines
 

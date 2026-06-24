@@ -1,9 +1,10 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post},
     Json, Router,
 };
 use db_types::{Permission, Repository};
+use lore_client::{LoreBlob, LoreRevision, LoreTreeEntry};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -28,6 +29,18 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/orgs/{org}/repos/{repo}/collaborators",
             get(list_collaborators),
+        )
+        .route(
+            "/api/v1/orgs/{org}/repos/{repo}/revisions",
+            get(list_repo_revisions),
+        )
+        .route(
+            "/api/v1/orgs/{org}/repos/{repo}/tree/{revision}",
+            get(browse_repo_tree),
+        )
+        .route(
+            "/api/v1/orgs/{org}/repos/{repo}/blob/{revision}",
+            get(read_repo_blob),
         )
 }
 
@@ -352,4 +365,78 @@ async fn list_collaborators(
     .await?;
 
     Ok(Json(collaborators))
+}
+
+// ---------------------------------------------------------------------------
+// Lore-backed reads (branches / revisions / tree / blob)
+// ---------------------------------------------------------------------------
+
+/// Resolve an `org/repo` slug pair to its 16-byte Lore partition id.
+async fn resolve_partition(
+    state: &AppState,
+    org: &str,
+    repo: &str,
+) -> Result<[u8; 16], AppError> {
+    let row: Option<(Vec<u8>,)> = sqlx::query_as(
+        r#"
+        SELECT r.lore_partition_id
+        FROM repositories r
+        JOIN organizations o ON o.id = r.org_id
+        WHERE o.name = $1 AND r.name = $2
+        "#,
+    )
+    .bind(org)
+    .bind(repo)
+    .fetch_optional(&state.pool)
+    .await?;
+
+    let bytes = row
+        .ok_or_else(|| AppError::not_found("repository not found"))?
+        .0;
+    bytes
+        .try_into()
+        .map_err(|_| AppError::bad_request("repository has an invalid partition id"))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TreePathQuery {
+    /// Directory or file path within the revision; defaults to the repo root.
+    #[serde(default)]
+    pub path: String,
+}
+
+async fn list_repo_revisions(
+    State(state): State<AppState>,
+    Path((org, repo)): Path<(String, String)>,
+) -> Result<Json<Vec<LoreRevision>>, AppError> {
+    let partition = resolve_partition(&state, &org, &repo).await?;
+    Ok(Json(state.lore_client.list_revisions(partition).await))
+}
+
+async fn browse_repo_tree(
+    State(state): State<AppState>,
+    Path((org, repo, revision)): Path<(String, String, String)>,
+    Query(query): Query<TreePathQuery>,
+) -> Result<Json<Vec<LoreTreeEntry>>, AppError> {
+    let partition = resolve_partition(&state, &org, &repo).await?;
+    Ok(Json(
+        state
+            .lore_client
+            .browse_tree(partition, &revision, &query.path)
+            .await,
+    ))
+}
+
+async fn read_repo_blob(
+    State(state): State<AppState>,
+    Path((org, repo, revision)): Path<(String, String, String)>,
+    Query(query): Query<TreePathQuery>,
+) -> Result<Json<LoreBlob>, AppError> {
+    let partition = resolve_partition(&state, &org, &repo).await?;
+    state
+        .lore_client
+        .read_blob(partition, &revision, &query.path)
+        .await
+        .map(Json)
+        .ok_or_else(|| AppError::not_found("blob not found"))
 }
