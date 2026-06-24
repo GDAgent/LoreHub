@@ -50,6 +50,9 @@ Authentication uses an `HttpOnly` session cookie set by the auth endpoints.
 
 | Method | Path | Description |
 | --- | --- | --- |
+| GET | `/api/v1/orgs/{org}/repos/{repo}` | Repo settings (display name, description, visibility, default branch, required approvals, archived) |
+| PATCH | `/api/v1/orgs/{org}/repos/{repo}` | Update repo settings (any of `{display_name,description,visibility,default_branch,required_approvals,archived}`) |
+| GET | `/api/v1/orgs/{org}/repos/{repo}/collaborators` | List repo collaborators with org role, repo role, and teams |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/issues` | List issues (`?state=open\|closed\|all`) |
 | POST | `/api/v1/orgs/{org}/repos/{repo}/issues` | Create an issue (`{title,body}`) |
 | GET | `/api/v1/orgs/{org}/repos/{repo}/issues/{number}` | Issue detail with comments |

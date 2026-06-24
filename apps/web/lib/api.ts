@@ -190,6 +190,24 @@ export type ApiTeam = {
   members: string[];
 };
 
+export type ApiRepoSettings = {
+  name: string;
+  display_name: string;
+  description: string | null;
+  visibility: string;
+  default_branch: string;
+  required_approvals: number;
+  archived: boolean;
+};
+
+export type ApiRepoCollaborator = {
+  username: string;
+  display_name: string;
+  org_role: string;
+  repo_role: string;
+  teams: string[];
+};
+
 export type ApiBranch = {
   name: string;
   head_revision: string;

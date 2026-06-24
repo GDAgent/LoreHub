@@ -1242,15 +1242,16 @@ API via server actions (no demo fallback, no live/demo pill). `lib/repo-data.ts`
 **Still reading `apps/web/lib/demo-*.ts`:**
 - [x] **Branches** + **locks** lists wired live (read-only; create/unlock are Lore writes → §30.3)
 - [x] **Teams** (list + create) and **org settings** (profile + members table) wired live
+- [x] **Repo settings** wired live — general form + PATCH (display name, description, visibility, default branch, required approvals), branch protection from `required_approvals`, live collaborators/teams tables, archive toggle, obliterate link; role-capabilities matrix is inline RBAC reference
 - [ ] Repo home, code tree/file viewer, revisions list/detail, diff — `demo-repository.ts` (needs Lore gRPC §30.3)
 - [ ] Pipelines list + run detail — `demo-pipelines.ts` (needs runner §30.3)
 - [ ] Assets browser/detail, binary-diff, analytics, obliterate — `demo-assets.ts` (needs Lore gRPC §30.3)
-- [ ] Dashboard, org settings, teams, notifications — `demo-collaboration.ts`
+- [ ] Dashboard, notifications — `demo-collaboration.ts` (need web auth/current-user → §30 auth)
 - [ ] Admin + enterprise (SSO, directory, audit, SLA, billing), SSO handoff — `demo-enterprise.ts`
-- [ ] **Then:** delete all `demo-*.ts` (collaboration pages no longer import `demo-collaboration` for CRs/issues; remaining importers: dashboard, notifications, settings, teams, obliterate).
+- [ ] **Then:** delete all `demo-*.ts` (remaining `demo-collaboration` importers: dashboard, notifications, obliterate — all gated on Lore/auth).
 
 ### 30.2 API endpoints still missing
-- [~] Orgs/teams/members: `GET /orgs/{org}`, `/orgs/{org}/members`, `/orgs/{org}/teams` (+ team create) done; repo create/settings/collaborators still missing
+- [x] Orgs/teams/members: `GET /orgs/{org}`, `/orgs/{org}/members`, `/orgs/{org}/teams` (+ team create); repo settings `GET`/`PATCH /orgs/{org}/repos/{repo}` + `/collaborators` done. Repo **create** via UI still missing
 - [x] CR detail (reviews, reviewers, comments, grouped inline threads, approvals, merge gate); issue + CR **mutations** (create/comment/state, CR review/comment/inline/merge with approval gate)
 - [ ] Lock/branch mutations; label assignment; milestones; assignees
 - [ ] Tree/blob/diff (Lore-backed); revisions list/detail

@@ -23,7 +23,6 @@ export default async function OrganizationSettingsPage({ params }: OrganizationS
           <Link href={`/${org}/settings`} className="active" aria-current="page">Settings</Link>
           <Link href={`/${org}/teams`}>Teams</Link>
           <Link href={`/${org}/notifications`}>Notifications</Link>
-          <Link href={`/${org}/demo/settings`}>Repository permissions</Link>
         </nav>
       </section>
 

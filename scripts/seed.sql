@@ -36,11 +36,19 @@ INSERT INTO team_members (team_id, user_id) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Repository ------------------------------------------------------------
-INSERT INTO repositories (id, org_id, name, display_name, description, visibility, lore_partition_id, default_branch) VALUES
+INSERT INTO repositories (id, org_id, name, display_name, description, visibility, lore_partition_id, default_branch, required_approvals) VALUES
     ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'demo', 'Arena Vertical Slice',
      'Reference arena vertical slice — textures, audio, models, and cinematics under binary-first history.',
-     'private', '\xdddddddddddddddddddddddddddddddd', 'main')
+     'private', '\xdddddddddddddddddddddddddddddddd', 'main', 2)
 ON CONFLICT (id) DO NOTHING;
+
+-- Repository collaborators ----------------------------------------------
+INSERT INTO repo_collaborators (repo_id, user_id, role) VALUES
+    ('dddddddd-dddd-dddd-dddd-dddddddddddd', '11111111-1111-1111-1111-111111111111', 'Maintainer'),
+    ('dddddddd-dddd-dddd-dddd-dddddddddddd', '22222222-2222-2222-2222-222222222222', 'Developer'),
+    ('dddddddd-dddd-dddd-dddd-dddddddddddd', '33333333-3333-3333-3333-333333333333', 'Owner'),
+    ('dddddddd-dddd-dddd-dddd-dddddddddddd', '44444444-4444-4444-4444-444444444444', 'Developer')
+ON CONFLICT (repo_id, user_id) DO NOTHING;
 
 INSERT INTO branches (repo_id, name, head_revision, is_default) VALUES
     ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'main', 'f34ab29ce810', true),
